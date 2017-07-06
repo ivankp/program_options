@@ -7,7 +7,7 @@
 #include <boost/regex.hpp>
 #endif
 
-namespace ivanp { namespace opt {
+namespace ivanp { namespace po {
 namespace detail {
 
 // Matchers ---------------------------------------------------------
@@ -96,7 +96,7 @@ make_opt_match_impl(T&& x, opt_match_tag<TagT>) {
   else
 #endif
   if (t==short_opt) {
-    if (x[2]!='\0') throw opt::error(
+    if (x[2]!='\0') throw po::error(
       "short arg "+std::string(x)+" defined with more than one char");
     return { new opt_match<char>( x[1] ), t };
   } else {

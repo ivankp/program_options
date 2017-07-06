@@ -9,7 +9,7 @@ using std::cerr;
 using std::endl;
 using namespace std::string_literals;
 
-namespace ivanp { namespace args {
+namespace ivanp { namespace po {
 
 namespace detail {
 
@@ -34,7 +34,7 @@ opt_type get_opt_type(const char* arg) noexcept {
 }
 
 void parser::parse(int argc, char const * const * argv) {
-  using namespace ::ivanp::args::detail;
+  using namespace ::ivanp::po::detail;
   // for (int i=1; i<argc; ++i) {
   //   for (const auto& m : help_matchers) {
   //     if ((*m)(argv[i])) {
@@ -57,7 +57,7 @@ void parser::parse(int argc, char const * const * argv) {
     // ==============================================================
     if (opt_type!=context_opt) {
       if (waiting && waiting->need)
-        throw args::error(waiting->name() + " without value");
+        throw po::error(waiting->name() + " without value");
     }
 
     switch (opt_type) {
@@ -109,7 +109,7 @@ void parser::parse(int argc, char const * const * argv) {
       goto cont;
     }
 
-    throw args::error("unexpected option "s + arg);
+    throw po::error("unexpected option "s + arg);
     cont: ;
   }
 }

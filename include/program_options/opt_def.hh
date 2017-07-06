@@ -3,7 +3,7 @@
 
 #include "program_options/opt_parser.hh"
 
-namespace ivanp { namespace opt {
+namespace ivanp { namespace po {
 
 // Opt def mixins ---------------------------------------------------
 

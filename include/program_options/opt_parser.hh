@@ -8,7 +8,7 @@
 #include <sstream>
 #endif
 
-namespace ivanp { namespace args {
+namespace ivanp { namespace po {
 namespace detail {
 
 template <typename T> struct arg_parser {
@@ -17,7 +17,7 @@ template <typename T> struct arg_parser {
     try {
       x = boost::lexical_cast<T>(arg);
     } catch (...) {
-      throw opt::error(cat(
+      throw po::error(cat(
         '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
     }
 #else

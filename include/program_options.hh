@@ -17,7 +17,7 @@
 #include "tuple_alg.hh"
 #include "seq_alg.hh"
 
-namespace ivanp { namespace opt {
+namespace ivanp { namespace po {
 struct error : std::runtime_error {
   using std::runtime_error::runtime_error;
 };
@@ -26,7 +26,7 @@ struct error : std::runtime_error {
 #include "program_options/opt_match.hh"
 #include "program_options/opt_def.hh"
 
-namespace ivanp { namespace opt {
+namespace ivanp { namespace po {
 
 class program_options {
   std::vector<std::unique_ptr<detail::opt_def_base>> opt_defs;

@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
   bool b;
 
   try {
-    using namespace ivanp::args;
+    using namespace ivanp::po;
     parser()
       (&d,'d',"Double",switch_init(4.2))
       (&b,'b',"bool switch",name("switch"))
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
           "starts with \'t\'")
       // (&c,".*\\.txt","ends with .txt",name{"regex"})
       .parse(argc,argv);
-  } catch(const std::exception& e) {
+  } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;
     return 1;
   }
