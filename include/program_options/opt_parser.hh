@@ -12,7 +12,7 @@ namespace ivanp { namespace po {
 namespace detail {
 
 template <typename T> struct arg_parser {
-  inline static void parse(const char* arg, T& x) {
+  inline void operator()(const char* arg, T& x) {
 #ifdef PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
     try {
       x = boost::lexical_cast<T>(arg);

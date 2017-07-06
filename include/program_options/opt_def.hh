@@ -5,7 +5,7 @@
 
 namespace ivanp { namespace po {
 
-// Opt def mixins ---------------------------------------------------
+// Opt def props ---------------------------------------------------
 
 namespace _ {
 
@@ -13,7 +13,7 @@ struct name { std::string name; };
 template <typename T> struct is_name : std::false_type { };
 template <> struct is_name<name> : std::true_type { };
 
-struct multi { unsigned num = -1u; };
+struct multi { unsigned num = 0; };
 template <typename T> struct is_multi : std::false_type { };
 template <> struct is_multi<multi> : std::true_type { };
 
@@ -24,6 +24,12 @@ template <> struct is_pos<pos> : std::true_type { };
 struct req { };
 template <typename T> struct is_req : std::false_type { };
 template <> struct is_req<req> : std::true_type { };
+
+template <typename T> struct is_parser {
+  template <typename F>
+  using type = typename is_callable<F,const char*,T&>::type;
+};
+template <typename T> struct is_parser<const T>: std::false_type { };
 
 template <typename... Args> class switch_init {
   std::tuple<Args...> args;
@@ -45,12 +51,6 @@ template <typename T> struct is_switch_init : std::false_type { };
 template <typename... T>
 struct is_switch_init<switch_init<T...>> : std::true_type { };
 
-template <typename T> struct is_parser {
-  template <typename F>
-  using type = typename is_callable<F,const char*,T&>::type;
-};
-template <typename T> struct is_parser<const T>: std::false_type { };
-
 } // end namespace _
 
 template <typename... Args>
@@ -67,134 +67,95 @@ inline _::switch_init<std::decay_t<Args>...> switch_init(Args&&... args) {
 namespace detail {
 
 // Option definition objects ----------------------------------------
-// These provide common interface for invoking single argument parsers
+// These provide common interface for invoking argument parsers
 // and assigning new values to recepients via pointers
-// These are created as a result of calling parser::operator()
+// These are created as a result of calling program_options::operator()
 
-struct opt_def_base {
+struct opt_def {
   std::string descr;
   unsigned count = 0;
 
-  opt_def_base(std::string&& descr): descr(std::move(descr)) { }
-  virtual ~opt_def_base() { }
+  opt_def(std::string&& descr): descr(std::move(descr)) { }
+  virtual ~opt_def() { }
   virtual void parse(const char* arg) = 0;
-  virtual std::string name() const { return descr; } // FIXME
-  virtual bool is_switch() = 0;
-  virtual unsigned min() const noexcept = 0;
-  virtual unsigned max() const noexcept = 0;
+  virtual void as_switch() = 0;
+  virtual unsigned can_switch() const noexcept = 0;
+  virtual unsigned max_cnt() const noexcept = 0;
+  virtual std::string name() const = 0;
 };
 
-template <typename T, typename... Mixins>
-class opt_def final: public opt_def_base, Mixins... {
+template <typename T, typename... Props>
+class opt_def_impl final: public opt_def, Props... {
   T *x; // recepient of parsed value
 
-  using mixins = std::tuple<Mixins...>;
-  template <template<typename> typename Pred>
-  using index_t = first_index_of<Pred,mixins>;
-  template <typename Seq>
-  using mix_t = std::tuple_element_t<seq::head<Seq>::value,mixins>;
+public:
+  using type = std::decay_t<T>;
 
-  // parser ---------------------------------------------------------
-  using parser_index = index_t<_::is_parser<T>::template type>;
-  template <typename index = parser_index>
-  inline std::enable_if_t<index::size()==1>
-  parse_impl(const char* arg) const {
-    mix_t<index>::operator()(arg,*x);
+#define OPT_PROP_TYPE(NAME) \
+  using NAME##_t = find_fist_t<_::is_##NAME,Props...>;
+
+  OPT_PROP_TYPE(name)
+  OPT_PROP_TYPE(switch_init)
+  OPT_PROP_TYPE(pos)
+  OPT_PROP_TYPE(req)
+  OPT_PROP_TYPE(multi)
+
+#undef OPT_PROP_TYPE
+
+  using parser_t = find_fist_t<_::is_parser<T>::template type,Props...>;
+
+private:
+  // parse ----------------------------------------------------------
+  template <typename = void>
+  inline void parse_impl const { opt_parser<T>()(arg,*x); }
+  template <>
+  inline void parse_impl<enable_if_just_t<parser_t>> const {
+    extract_t<parser_t>::operator()(arg,*x);
   }
-  template <typename index = parser_index>
-  inline std::enable_if_t<index::size()==0>
-  parse_impl(const char* arg) const {
-    opt_parser<T>::parse(arg,*x);
-  }
+
+  // num args -------------------------------------------------------
+  template <typename U = multi_t> inline enable_if_just_t<U,unsigned>
+  max_cnt_impl() const noexcept { return extract_t<U>::num; }
+  template <typename U = multi_t> inline enable_if_nothing_t<U,unsigned>
+  max_cnt_impl() const noexcept { return min_cnt(); }
 
   // switch ---------------------------------------------------------
-  using switch_init_index = index_t<_::is_switch_init>;
-  template <typename U = T> inline std::enable_if_t<
-    std::is_same<U,bool>::value,
-  bool> is_switch_impl() noexcept {
-    (*x) = true;
-    ++count;
-    return true;
-  }
-  template <typename U = T> inline std::enable_if_t<
-    !std::is_same<U,bool>::value && switch_init_index::size(),
-  bool> is_switch_impl() {
-    mix_t<switch_init_index>::construct(*x);
-    ++count;
-    return true;
-  }
-  template <typename U = T> inline std::enable_if_t<
-    !std::is_same<U,bool>::value && !switch_init_index::size(),
-  bool> is_switch_impl() const noexcept { return false; }
+  template <typename U = switch_init_t>
+  inline enable_if_just_t<U>
+  as_switch_impl const { extract_t<U>::construct(*x); }
+  template <typename U = switch_init_t>
+  inline enable_if_t<is_nothing<U>::value && std::is_same<type,bool>::value>
+  as_switch_impl const { (*x) = true; }
 
   // name -----------------------------------------------------------
-  using name_index = index_t<_::is_name>;
-  template <typename index = name_index>
-  inline std::enable_if_t<index::size()==1,std::string> name_impl() const {
-    return mix_t<index>::name;
-  }
-  template <typename index = name_index>
-  inline std::enable_if_t<index::size()==0,std::string> name_impl() const {
-    return opt_def_base::name();
-  }
+  template <typename U = name_t> inline enable_if_just_t<U,std::string>
+  name_impl const { return extract_t<U>::name; }
+  template <typename U = name_t> inline enable_if_nothing_t<U,std::string>
+  name_impl const { return descr; } // FIXME
 
-  // min max --------------------------------------------------------
-  inline unsigned min() const noexcept {
-    return switch_init_index::size();
-  }
-
-  using multi_index = index_t<_::is_multi>;
-  template <typename index = multi_index>
-  inline std::enable_if_t<
-    index::size()==1,
-  unsigned> max() noexcept {
-    return mix_t<multi_index>::num;
-  }
-  template <typename index = multi_index>
-  inline std::enable_if_t<
-    index::size()==0 && 
-  unsigned> max() const noexcept { return 0; }
-
-  inline unsigned max() const noexcept {
-
-    return switch_init_index::size();
-  }
-
-    return std::integral_constant<unsigned,switch_init_index::size() >::value;
-  }
-
-  // ----------------------------------------------------------------
 public:
+  // ----------------------------------------------------------------
   template <typename... M>
-  opt_def(T* x, std::string&& descr, M&&... m)
-  : opt_def_base(std::move(descr)), Mixins(std::forward<M>(m))..., x(x)
-  { set_count(); }
+  opt_def_impl(T* x, std::string&& descr, M&&... m)
+  : opt_def(std::move(descr)), Props(std::forward<M>(m))..., x(x) { };
 
-  inline void parse(const char* arg) {
-    parse_impl(arg);
-    ++count;
-  }
+  inline void parse(const char* arg) { parse_impl(arg); ++count; }
+  inline void as_switch() { ++count; as_switch_impl(); }
 
-  inline bool is_switch() { return is_switch_impl(); }
   inline std::string name() const { return name_impl(); }
+
+  inline unsigned can_switch() const noexcept {
+    return !(std::is_same<type,bool>::value || is_just<switch_init_t>::value);
+  }
+  inline unsigned max_cnt() const noexcept { return max_cnt_impl(); }
 };
-
-// Traits -----------------------------------------------------------
-// CA. Can have arguments
-// MA. Must have arguments
-// CS. Can be a switch
-// MS. Is switch only (must)
-// MB. Must receive all arguments before next option
-
-template <typename OptDef>
-struct optCA {};
 
 // Factory ----------------------------------------------------------
 template <typename T, typename Tuple, size_t... I>
 inline auto make_opt_def(
   T* x, std::string&& descr, Tuple&& tup, std::index_sequence<I...>
 ) {
-  using type = opt_def<T,
+  using type = opt_def_impl<T,
     std::decay_t<std::tuple_element_t<I,std::decay_t<Tuple>>>... >;
   return new type( x, std::move(descr), std::get<I>(tup)... );
 }

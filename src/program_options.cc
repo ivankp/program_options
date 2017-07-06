@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "program_options.hh"
+// TODO: forward declarations instead of full header?
 
 using std::cout;
 using std::cerr;
@@ -33,6 +34,11 @@ opt_type get_opt_type(const char* arg) noexcept {
 
 }
 
+void try_as_switch(opt_def* waiting) {
+  if (waiting->can_switch()) waiting->as_switch();
+  else throw po::error(waiting->name() + " without value");
+};
+
 void parser::parse(int argc, char const * const * argv) {
   using namespace ::ivanp::po::detail;
   // for (int i=1; i<argc; ++i) {
@@ -44,9 +50,9 @@ void parser::parse(int argc, char const * const * argv) {
   //   }
   // }
 
-  opt_def_base *waiting = nullptr;
+  opt_def *waiting = nullptr;
   const char* str = nullptr;
-  std::string tmp;
+  std::string tmp; // use view here
 
   for (int i=1; i<argc; ++i) {
     const char* arg = argv[i];
@@ -55,48 +61,33 @@ void parser::parse(int argc, char const * const * argv) {
     cout << arg << ' ' << opt_type << endl;
 
     // ==============================================================
-    if (opt_type!=context_opt) {
-      if (waiting && waiting->need)
-        throw po::error(waiting->name() + " without value");
-    }
+    if (opt_type!=context_opt && waiting) try_as_switch(waiting);
 
     switch (opt_type) {
       case long_opt: // ---------------------------------------------
-
         str = strchr(arg,'='); // split by '=' if long
         if (str) tmp.assign(arg,str), ++str, arg = tmp.c_str();
-
         break;
       case short_opt: // --------------------------------------------
-        if (arg[2]!='\0') str = arg+2;
-
+        if (arg[2]!='\0') str = arg+2; // allow spaceless if short
         break;
       case context_opt: // ------------------------------------------
-        if (!waiting) str = arg;
-
+        if (!waiting) str = arg; // parse as argument if waiting
         break;
     }
-
-    // TODO
-
-    // ./test/test --int 55 -d1.754564e3 test
-    // "test" cannot be interpreted as int
-
-    // ./test/test --int 55 -d 1.75456
-    // "1.75456" cannot be interpreted as int
 
     // ==============================================================
 
     if (opt_type!=context_opt || !waiting) {
       for (auto& m : matchers[opt_type]) {
-        auto& def = m.second;
-        const auto name = def->name();
-        cout << "trying: " << name << endl;
-        if ((*m.first)(arg)) {
-          cout << arg << " matched: " << name << endl;
-          if (def->count==0) throw error("excessive option " + name);
-          if (str) def->parse(str), str = nullptr; // call parser & reset
-          else if (def->is_switch()) { }
+        auto *opt = m.second;
+        const auto name = opt->name(); // TEST
+        cout << "trying: " << name << endl; // TEST
+        if ((*m.first)(arg)) { // match
+          cout << arg << " matched: " << name << endl; // TEST
+          if (opt->count == opt->max_cnt()) throw error("excessive option " + name);
+          if (str) opt->parse(str), str = nullptr; // call parser & reset
+          else if (opt->is_switch()) { }
           else waiting = def;
           goto cont;
         }
@@ -112,6 +103,7 @@ void parser::parse(int argc, char const * const * argv) {
     throw po::error("unexpected option "s + arg);
     cont: ;
   }
+  if (waiting) try_as_switch(waiting);
 }
 
 // FIXME

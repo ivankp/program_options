@@ -23,6 +23,7 @@ public:
   using type = typename impl<0>::type;
 };
 
+/*
 template <template<typename> typename Pred, typename Tuple>
 class first_index_of_impl {
   static constexpr size_t size = std::tuple_size<Tuple>::value;
@@ -38,14 +39,15 @@ class first_index_of_impl {
 public:
   using type = typename impl<0>::type;
 };
+*/
 
 } // end namespace detail
 
 template <template<typename> typename Pred, typename Tuple>
 using indices_of = typename detail::indices_of_impl<Pred,Tuple>::type;
 
-template <template<typename> typename Pred, typename Tuple>
-using first_index_of = typename detail::first_index_of_impl<Pred,Tuple>::type;
+// template <template<typename> typename Pred, typename Tuple>
+// using first_index_of = typename detail::first_index_of_impl<Pred,Tuple>::type;
 
 } // end namespace ivanp
 
