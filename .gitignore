@@ -1,0 +1,12 @@
+/*
+
+!.gitignore
+!Makefil
+!include/
+!src/
+
+!test/
+test/*
+!test/*.cc
+
+**.swp
