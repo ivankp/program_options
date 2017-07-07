@@ -13,7 +13,7 @@ struct name { std::string name; };
 template <typename T> struct is_name : std::false_type { };
 template <> struct is_name<name> : std::true_type { };
 
-struct multi { unsigned num = 0; };
+struct multi { };
 template <typename T> struct is_multi : std::false_type { };
 template <> struct is_multi<multi> : std::true_type { };
 
@@ -32,15 +32,15 @@ template <typename T> struct is_parser {
 template <typename T> struct is_parser<const T>: std::false_type { };
 
 template <typename... Args> class switch_init {
-  std::tuple<Args...> args;
+  mutable std::tuple<Args...> args;
   template <typename T, size_t... I>
-  inline void construct(T& x, std::index_sequence<I...>) {
+  inline void construct(T& x, std::index_sequence<I...>) const {
     x = { std::get<I>(args)... };
   }
 public:
-  template <typename... T>
+  template <typename... T> // TODO: contruct tuple more directly
   switch_init(std::tuple<T...>&& tup): args(std::move(tup)) { }
-  template <typename T> inline void construct(T& x) {
+  template <typename T> inline void construct(T& x) const {
     construct(x,std::index_sequence_for<Args...>{});
   }
 };
@@ -55,7 +55,6 @@ struct is_switch_init<switch_init<T...>> : std::true_type { };
 
 template <typename... Args>
 inline _::name name(Args&&... args) { return {{std::forward<Args>(args)...}}; }
-constexpr _::multi multi(unsigned n) noexcept { return {n}; }
 constexpr _::multi multi() noexcept { return {}; }
 constexpr _::pos pos() noexcept { return {}; }
 constexpr _::req req() noexcept { return {}; }
@@ -77,11 +76,12 @@ struct opt_def {
 
   opt_def(std::string&& descr): descr(std::move(descr)) { }
   virtual ~opt_def() { }
+  virtual std::string name() const = 0;
   virtual void parse(const char* arg) = 0;
   virtual void as_switch() = 0;
-  virtual unsigned can_switch() const noexcept = 0;
-  virtual unsigned max_cnt() const noexcept = 0;
-  virtual std::string name() const = 0;
+  virtual bool is_multi() const noexcept = 0;
+  virtual bool is_pos() const noexcept = 0;
+  virtual bool is_req() const noexcept = 0;
 };
 
 template <typename T, typename... Props>
@@ -92,46 +92,41 @@ public:
   using type = std::decay_t<T>;
 
 #define OPT_PROP_TYPE(NAME) \
-  using NAME##_t = find_fist_t<_::is_##NAME,Props...>;
+  using NAME##_t = find_first_t<_::is_##NAME,Props...>;
 
   OPT_PROP_TYPE(name)
   OPT_PROP_TYPE(switch_init)
+  OPT_PROP_TYPE(multi)
   OPT_PROP_TYPE(pos)
   OPT_PROP_TYPE(req)
-  OPT_PROP_TYPE(multi)
 
 #undef OPT_PROP_TYPE
 
-  using parser_t = find_fist_t<_::is_parser<T>::template type,Props...>;
+  using parser_t = find_first_t<_::is_parser<T>::template type,Props...>;
 
 private:
   // parse ----------------------------------------------------------
-  template <typename = void>
-  inline void parse_impl const { opt_parser<T>()(arg,*x); }
-  template <>
-  inline void parse_impl<enable_if_just_t<parser_t>> const {
-    extract_t<parser_t>::operator()(arg,*x);
-  }
-
-  // num args -------------------------------------------------------
-  template <typename U = multi_t> inline enable_if_just_t<U,unsigned>
-  max_cnt_impl() const noexcept { return extract_t<U>::num; }
-  template <typename U = multi_t> inline enable_if_nothing_t<U,unsigned>
-  max_cnt_impl() const noexcept { return min_cnt(); }
+  template <typename U = parser_t> inline enable_if_just_t<U>
+  parse_impl(const char* arg) const { extract<parser_t>::operator()(arg,*x); }
+  template <typename U = parser_t> inline enable_if_nothing_t<U>
+  parse_impl(const char* arg) const { arg_parser<T>()(arg,*x); }
 
   // switch ---------------------------------------------------------
-  template <typename U = switch_init_t>
-  inline enable_if_just_t<U>
-  as_switch_impl const { extract_t<U>::construct(*x); }
-  template <typename U = switch_init_t>
-  inline enable_if_t<is_nothing<U>::value && std::is_same<type,bool>::value>
-  as_switch_impl const { (*x) = true; }
+  template <typename U = switch_init_t> inline enable_if_just_t<U>
+  as_switch_impl() const { extract<U>::construct(*x); }
+  template <typename U = switch_init_t> inline std::enable_if_t<
+    is_nothing<U>::value && std::is_same<type,bool>::value>
+  as_switch_impl() const { (*x) = true; }
+  template <typename U = switch_init_t> [[noreturn]]
+  inline std::enable_if_t<
+    is_nothing<U>::value && !std::is_same<type,bool>::value>
+  as_switch_impl() const { throw error(name() + " without value"); }
 
   // name -----------------------------------------------------------
   template <typename U = name_t> inline enable_if_just_t<U,std::string>
-  name_impl const { return extract_t<U>::name; }
+  name_impl() const { return extract<U>::name; }
   template <typename U = name_t> inline enable_if_nothing_t<U,std::string>
-  name_impl const { return descr; } // FIXME
+  name_impl() const { return descr; } // FIXME
 
 public:
   // ----------------------------------------------------------------
@@ -140,14 +135,15 @@ public:
   : opt_def(std::move(descr)), Props(std::forward<M>(m))..., x(x) { };
 
   inline void parse(const char* arg) { parse_impl(arg); ++count; }
-  inline void as_switch() { ++count; as_switch_impl(); }
+  inline void as_switch() { as_switch_impl(); ++count; }
 
   inline std::string name() const { return name_impl(); }
 
-  inline unsigned can_switch() const noexcept {
-    return !(std::is_same<type,bool>::value || is_just<switch_init_t>::value);
+  constexpr bool is_multi() const noexcept {
+    return is_just<multi_t>::value; // TODO: or T is a container
   }
-  inline unsigned max_cnt() const noexcept { return max_cnt_impl(); }
+  constexpr bool is_pos() const noexcept { return is_just<pos_t>::value; }
+  constexpr bool is_req() const noexcept { return is_just<req_t>::value; }
 };
 
 // Factory ----------------------------------------------------------

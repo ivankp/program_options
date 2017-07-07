@@ -17,10 +17,10 @@ int main(int argc, char* argv[]) {
 
   try {
     using namespace ivanp::po;
-    parser()
+    program_options()
       (&d,'d',"Double",switch_init(4.2))
-      (&b,'b',"bool switch",name("switch"))
-      (&i,{"-i","--int"},"Int",pos(),multi(-1u))
+      (&b,'b',"bool switch",name("bool"))
+      (&i,{"-i","--int"},"Int",pos(),multi())
       (&i,"--count","Count",
         [](const char* str, int& x){ x = strlen(str); })
       (&s,std::forward_as_tuple(

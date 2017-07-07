@@ -4,6 +4,7 @@
 
 #include "program_options.hh"
 // TODO: forward declarations instead of full header?
+// TODO: allow negative integers
 
 using std::cout;
 using std::cerr;
@@ -34,12 +35,7 @@ opt_type get_opt_type(const char* arg) noexcept {
 
 }
 
-void try_as_switch(opt_def* waiting) {
-  if (waiting->can_switch()) waiting->as_switch();
-  else throw po::error(waiting->name() + " without value");
-};
-
-void parser::parse(int argc, char const * const * argv) {
+void program_options::parse(int argc, char const * const * argv) {
   using namespace ::ivanp::po::detail;
   // for (int i=1; i<argc; ++i) {
   //   for (const auto& m : help_matchers) {
@@ -51,7 +47,7 @@ void parser::parse(int argc, char const * const * argv) {
   // }
 
   opt_def *waiting = nullptr;
-  const char* str = nullptr;
+  const char* val = nullptr;
   std::string tmp; // use view here
 
   for (int i=1; i<argc; ++i) {
@@ -61,53 +57,49 @@ void parser::parse(int argc, char const * const * argv) {
     cout << arg << ' ' << opt_type << endl;
 
     // ==============================================================
-    if (opt_type!=context_opt && waiting) try_as_switch(waiting);
 
-    switch (opt_type) {
-      case long_opt: // ---------------------------------------------
-        str = strchr(arg,'='); // split by '=' if long
-        if (str) tmp.assign(arg,str), ++str, arg = tmp.c_str();
-        break;
-      case short_opt: // --------------------------------------------
-        if (arg[2]!='\0') str = arg+2; // allow spaceless if short
-        break;
-      case context_opt: // ------------------------------------------
-        if (!waiting) str = arg; // parse as argument if waiting
-        break;
+    if (opt_type!=context_opt) {
+      if (waiting) waiting->as_switch(), waiting = nullptr;
+      if (opt_type==long_opt) { // long: split by '='
+        if ((val = strchr(arg,'='))) arg = tmp.assign(arg,val).c_str(), ++val;
+      } else { // short: allow spaceless
+        if (arg[2]!='\0') val = arg+2;
+      }
     }
 
     // ==============================================================
 
-    if (opt_type!=context_opt || !waiting) {
+    if (!waiting) {
       for (auto& m : matchers[opt_type]) {
         auto *opt = m.second;
         const auto name = opt->name(); // TEST
-        cout << "trying: " << name << endl; // TEST
+        cout << arg << " trying: " << name << endl; // TEST
         if ((*m.first)(arg)) { // match
           cout << arg << " matched: " << name << endl; // TEST
-          if (opt->count == opt->max_cnt()) throw error("excessive option " + name);
-          if (str) opt->parse(str), str = nullptr; // call parser & reset
-          else if (opt->is_switch()) { }
-          else waiting = def;
+          if (!opt->is_multi() && opt->count)
+            throw error("too many options " + name);
+          if (val) opt->parse(val), val = nullptr; // call parser & reset
+          else waiting = opt;
           goto cont;
         }
       }
-    }
-
-    if (waiting && waiting->count) {
+      throw po::error("unexpected option "s + arg);
+      cont: ;
+    } else {
       waiting->parse(arg);
-      if (!waiting->count) waiting = nullptr;
-      goto cont;
+      waiting = nullptr;
     }
 
-    throw po::error("unexpected option "s + arg);
-    cont: ;
+    // TODO: if switch-only
   }
-  if (waiting) try_as_switch(waiting);
+  if (waiting) {
+    waiting->as_switch();
+    waiting = nullptr;
+  }
 }
 
 // FIXME
-// void parser::help() {
+// void program_options::help() {
 //   cout << "help" << endl;
 // }
 
