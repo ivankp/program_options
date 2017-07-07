@@ -2,12 +2,10 @@
 #define IVANP_OPT_PARSER_HH
 
 #if __has_include(<boost/lexical_cast.hpp>)
-// #if 0
 #define PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
 #include <boost/lexical_cast.hpp>
 #else
-// #include <sstream>
-#include "charstream.hh"
+#include <sstream>
 #endif
 
 namespace ivanp { namespace po {
@@ -23,8 +21,7 @@ template <typename T> struct arg_parser {
         '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
     }
 #else
-    // std::istringstream(arg) >> x;
-    charstream(arg) >> x;
+    std::istringstream(arg) >> x;
 #endif
   }
 };
