@@ -21,6 +21,10 @@ struct pos { };
 template <typename T> struct is_pos : std::false_type { };
 template <> struct is_pos<pos> : std::true_type { };
 
+struct npos { unsigned npos; };
+template <typename T> struct is_npos : std::false_type { };
+template <> struct is_npos<npos> : std::true_type { };
+
 struct req { };
 template <typename T> struct is_req : std::false_type { };
 template <> struct is_req<req> : std::true_type { };
@@ -56,8 +60,9 @@ struct is_switch_init<switch_init<T...>> : std::true_type { };
 template <typename... Args>
 inline _::name name(Args&&... args) { return {{std::forward<Args>(args)...}}; }
 constexpr _::multi multi() noexcept { return {}; }
-constexpr _::pos pos() noexcept { return {}; }
-constexpr _::req req() noexcept { return {}; }
+constexpr _::pos   pos() noexcept { return {}; }
+constexpr _::npos  pos(unsigned n) noexcept { return { n }; }
+constexpr _::req   req() noexcept { return {}; }
 template <typename... Args>
 inline _::switch_init<std::decay_t<Args>...> switch_init(Args&&... args) {
   return { std::forward_as_tuple(std::forward<Args>(args)...) };
@@ -79,9 +84,13 @@ struct opt_def {
   virtual std::string name() const = 0;
   virtual void parse(const char* arg) = 0;
   virtual void as_switch() = 0;
+
+  virtual bool is_switch() const noexcept = 0;
   virtual bool is_multi() const noexcept = 0;
   virtual bool is_pos() const noexcept = 0;
+  virtual bool is_pos_end() const noexcept = 0;
   virtual bool is_req() const noexcept = 0;
+  virtual bool is_signed() const noexcept = 0;
 };
 
 template <typename T, typename... Props>
@@ -96,9 +105,10 @@ public:
 
   OPT_PROP_TYPE(name)
   OPT_PROP_TYPE(switch_init)
-  OPT_PROP_TYPE(multi)
   OPT_PROP_TYPE(pos)
+  OPT_PROP_TYPE(npos)
   OPT_PROP_TYPE(req)
+  OPT_PROP_TYPE(multi)
 
 #undef OPT_PROP_TYPE
 
@@ -134,16 +144,26 @@ public:
   opt_def_impl(T* x, std::string&& descr, M&&... m)
   : opt_def(std::move(descr)), Props(std::forward<M>(m))..., x(x) { };
 
+  inline std::string name() const { return name_impl(); }
+
   inline void parse(const char* arg) { parse_impl(arg); ++count; }
   inline void as_switch() { as_switch_impl(); ++count; }
 
-  inline std::string name() const { return name_impl(); }
+  constexpr bool is_switch() const noexcept {
+    return std::is_same<type,bool>::value;
+  }
 
   constexpr bool is_multi() const noexcept {
     return is_just<multi_t>::value; // TODO: or T is a container
   }
-  constexpr bool is_pos() const noexcept { return is_just<pos_t>::value; }
+  constexpr bool is_pos() const noexcept {
+    return is_just<pos_t>::value || is_just<npos_t>::value;
+  }
+  constexpr bool is_pos_end() const noexcept { return is_just<pos_t>::value; }
   constexpr bool is_req() const noexcept { return is_just<req_t>::value; }
+  constexpr bool is_signed() const noexcept {
+    return std::is_signed<type>::value;
+  }
 };
 
 // Factory ----------------------------------------------------------

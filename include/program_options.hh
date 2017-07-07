@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <queue>
 #include <array>
 #include <memory>
 #include <type_traits>
@@ -34,6 +35,7 @@ class program_options {
     std::unique_ptr<const detail::opt_match_base>,
     detail::opt_def*
   >>,3> matchers;
+  std::queue<detail::opt_def*> pos;
 
   template <typename T, typename... Props>
   inline auto* add_opt(T* x, std::string&& descr, Props&&... p) {
@@ -50,9 +52,10 @@ class program_options {
 
     UNIQUE_PROP_ASSERT(name)
     UNIQUE_PROP_ASSERT(switch_init)
-    UNIQUE_PROP_ASSERT(multi)
     UNIQUE_PROP_ASSERT(pos)
+    UNIQUE_PROP_ASSERT(npos)
     UNIQUE_PROP_ASSERT(req)
+    UNIQUE_PROP_ASSERT(multi)
 
 #undef UNIQUE_PROP_ASSERT
 
@@ -60,13 +63,17 @@ class program_options {
     static_assert( parser_i::size() <= 1,
       "\033[33mrepeated parser in program argument definition\033[0m");
 
+    static_assert( !(pos_i::size() && npos_i::size()),
+      "\033[33monly one positional property can be specified\033[0m");
+
     using prop_seq = seq::join_t<
       parser_i,
       name_i,
       switch_init_i,
-      multi_i,
       pos_i,
-      req_i
+      npos_i,
+      req_i,
+      multi_i
     >;
 
     static_assert( prop_seq::size() == sizeof...(Props),
@@ -74,6 +81,12 @@ class program_options {
 
     auto *opt = detail::make_opt_def(x, std::move(descr), props, prop_seq{});
     opt_defs.emplace_back(opt);
+
+    // if (pos_i::size() || npos_i::size()) {
+    //   if (pos.size() && pos_i::size() && pos.back()->is_pos_end())
+    //     throw error("only one indefinite positional option can be specified");
+    //   pos.push(opt);
+    // }
 
     using opt_t = std::decay_t<decltype(*opt)>; // TEST
     prt_type<opt_t>(); // TEST

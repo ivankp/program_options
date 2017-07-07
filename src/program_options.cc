@@ -46,7 +46,7 @@ void program_options::parse(int argc, char const * const * argv) {
   //   }
   // }
 
-  opt_def *waiting = nullptr;
+  opt_def *opt = nullptr;
   const char* val = nullptr;
   std::string tmp; // use view here
 
@@ -59,7 +59,14 @@ void program_options::parse(int argc, char const * const * argv) {
     // ==============================================================
 
     if (opt_type!=context_opt) {
-      if (waiting) waiting->as_switch(), waiting = nullptr;
+      // if (opt_type==short_opt && std::isdigit(arg[1]) && opt->is_signed()) {
+      //   opt->parse(arg);
+      //   continue;
+      // }
+      if (opt) {
+        if (!opt->count) opt->as_switch();
+        opt = nullptr;
+      }
       if (opt_type==long_opt) { // long: split by '='
         if ((val = strchr(arg,'='))) arg = tmp.assign(arg,val).c_str(), ++val;
       } else { // short: allow spaceless
@@ -69,32 +76,37 @@ void program_options::parse(int argc, char const * const * argv) {
 
     // ==============================================================
 
-    if (!waiting) {
+    if (!opt) {
       for (auto& m : matchers[opt_type]) {
-        auto *opt = m.second;
-        const auto name = opt->name(); // TEST
-        cout << arg << " trying: " << name << endl; // TEST
         if ((*m.first)(arg)) { // match
-          cout << arg << " matched: " << name << endl; // TEST
+          opt = m.second;
+          cout << arg << " matched: " << opt->name() << endl; // TEST
           if (!opt->is_multi() && opt->count)
-            throw error("too many options " + name);
-          if (val) opt->parse(val), val = nullptr; // call parser & reset
-          else waiting = opt;
+            throw error("too many options " + opt->name());
+          if (opt->is_switch()) {
+            if (val) throw error(
+              "switch " + opt->name() + " does not take arguments");
+            opt->as_switch(), opt = nullptr;
+          } else if (val) {
+            opt->parse(val), val = nullptr;
+            if (!opt->is_multi()) opt = nullptr;
+          }
           goto cont;
         }
       }
       throw po::error("unexpected option "s + arg);
       cont: ;
     } else {
-      waiting->parse(arg);
-      waiting = nullptr;
+      cout << arg << " arg of: " << opt->name() << endl; // TEST
+      opt->parse(arg);
+      if (!opt->is_multi()) opt = nullptr;
     }
 
     // TODO: if switch-only
   }
-  if (waiting) {
-    waiting->as_switch();
-    waiting = nullptr;
+  if (opt) {
+    if (!opt->count) opt->as_switch();
+    opt = nullptr;
   }
 }
 

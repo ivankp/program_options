@@ -13,14 +13,14 @@ int main(int argc, char* argv[]) {
   double d;
   int i;
   std::string s;
-  bool b;
+  bool b = false;
 
   try {
     using namespace ivanp::po;
     program_options()
       (&d,'d',"Double",switch_init(4.2))
       (&b,'b',"bool switch",name("bool"))
-      (&i,{"-i","--int"},"Int",pos(),multi())
+      (&i,{"-i","--int"},"Int",multi())
       (&i,"--count","Count",
         [](const char* str, int& x){ x = strlen(str); })
       (&s,std::forward_as_tuple(
