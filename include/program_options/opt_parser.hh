@@ -16,7 +16,7 @@ template <typename T> struct arg_parser {
 #ifdef PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
     try {
       x = boost::lexical_cast<T>(arg);
-    } catch (...) {
+    } catch (const boost::bad_lexical_cast&) {
       throw po::error(cat(
         '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
     }

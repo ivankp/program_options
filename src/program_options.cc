@@ -4,7 +4,6 @@
 
 #include "program_options.hh"
 // TODO: forward declarations instead of full header?
-// TODO: allow negative integers
 
 using std::cout;
 using std::cerr;
@@ -133,6 +132,7 @@ void program_options::parse(int argc, char const * const * argv) {
   } // end arg loop
   if (opt) {
     if (!opt->count) opt->as_switch();
+    else throw po::error("dangling option " + opt->name());
     opt = nullptr;
   }
 }
