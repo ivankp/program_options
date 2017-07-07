@@ -30,8 +30,8 @@ int main(int argc, char* argv[]) {
       (&i,"--count","Count",pos(),
         [](const char* str, int& x){ x = strlen(str); })
       (&s,std::forward_as_tuple(
-            's', [](const char* arg){ return arg[0]=='t'; }),
-          "starts with \'t\'")
+            's', [](const char* arg){ return arg[0]=='s'; }),
+          "starts with \'s\'")
       // (&c,".*\\.txt","ends with .txt",name{"regex"})
       .parse(argc,argv);
   } catch (const std::exception& e) {

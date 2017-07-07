@@ -35,6 +35,11 @@ opt_type get_opt_type(const char* arg) noexcept {
 
 }
 
+void check_count(detail::opt_def* opt) {
+  if (!opt->is_multi() && opt->count)
+    throw error("too many options " + opt->name());
+}
+
 void program_options::parse(int argc, char const * const * argv) {
   using namespace ::ivanp::po::detail;
   // for (int i=1; i<argc; ++i) {
@@ -87,8 +92,8 @@ void program_options::parse(int argc, char const * const * argv) {
       if ((*m.first)(arg)) { // match
         opt = m.second;
         cout << arg << " matched: " << opt->name() << endl; // TEST
-        if (!opt->is_multi() && opt->count)
-          throw error("too many options " + opt->name());
+        check_count(opt);
+        if (opt_type==context_opt) val = arg;
         if (opt->is_switch()) {
           if (val) throw error(
             "switch " + opt->name() + " does not take arguments");
@@ -103,6 +108,7 @@ void program_options::parse(int argc, char const * const * argv) {
 
     if (!opt && pos.size()) { // handle positional options
       auto *pos_opt = pos.front();
+      check_count(pos_opt);
       cout << arg << " pos: " << pos_opt->name() << endl; // TEST
       pos_opt->parse(arg);
       if (!pos_opt->is_pos_end()) pos.pop();
