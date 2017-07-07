@@ -2,6 +2,7 @@
 #define IVANP_OPT_PARSER_HH
 
 #if __has_include(<boost/lexical_cast.hpp>)
+// #if 0
 #define PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
 #include <boost/lexical_cast.hpp>
 #else

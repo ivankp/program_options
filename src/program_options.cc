@@ -130,7 +130,7 @@ void program_options::parse(int argc, char const * const * argv) {
 
     throw po::error("unexpected option "s + arg);
     next_arg: ;
-  }
+  } // end arg loop
   if (opt) {
     if (!opt->count) opt->as_switch();
     opt = nullptr;

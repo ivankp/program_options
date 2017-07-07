@@ -16,9 +16,10 @@ struct membuf : std::streambuf {
 
 class charstream : public std::istream {
   membuf buf;
+public:
   charstream(const char* str, size_t n): std::istream(&buf), buf(str,n) { }
   charstream(const char* str): std::istream(&buf), buf(str,strlen(str)) { }
-}
+};
 
 } // end namespace ivanp
 
