@@ -5,7 +5,8 @@
 #define PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
 #include <boost/lexical_cast.hpp>
 #else
-#include <sstream>
+// #include <sstream>
+#include "charstream.hh"
 #endif
 
 namespace ivanp { namespace po {
@@ -21,7 +22,8 @@ template <typename T> struct arg_parser {
         '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
     }
 #else
-    std::istringstream(arg) >> x;
+    // std::istringstream(arg) >> x;
+    charstream(arg) >> x;
 #endif
   }
 };
