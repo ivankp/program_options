@@ -62,7 +62,7 @@ void program_options::parse(int argc, char const * const * argv) {
       // if (opt_type==short_opt && std::isdigit(arg[1]) && opt->is_signed()) {
       //   opt->parse(arg);
       //   continue;
-      // }
+      // } // TODO: nagative numbers
       if (opt) {
         if (!opt->count) opt->as_switch();
         opt = nullptr;
@@ -76,33 +76,41 @@ void program_options::parse(int argc, char const * const * argv) {
 
     // ==============================================================
 
-    if (!opt) {
-      for (auto& m : matchers[opt_type]) {
-        if ((*m.first)(arg)) { // match
-          opt = m.second;
-          cout << arg << " matched: " << opt->name() << endl; // TEST
-          if (!opt->is_multi() && opt->count)
-            throw error("too many options " + opt->name());
-          if (opt->is_switch()) {
-            if (val) throw error(
-              "switch " + opt->name() + " does not take arguments");
-            opt->as_switch(), opt = nullptr;
-          } else if (val) {
-            opt->parse(val), val = nullptr;
-            if (!opt->is_multi()) opt = nullptr;
-          }
-          goto cont;
-        }
-      }
-      throw po::error("unexpected option "s + arg);
-      cont: ;
-    } else {
+    if (opt) {
       cout << arg << " arg of: " << opt->name() << endl; // TEST
       opt->parse(arg);
       if (!opt->is_multi()) opt = nullptr;
+      continue;
     }
 
-    // TODO: if switch-only
+    for (auto& m : matchers[opt_type]) {
+      if ((*m.first)(arg)) { // match
+        opt = m.second;
+        cout << arg << " matched: " << opt->name() << endl; // TEST
+        if (!opt->is_multi() && opt->count)
+          throw error("too many options " + opt->name());
+        if (opt->is_switch()) {
+          if (val) throw error(
+            "switch " + opt->name() + " does not take arguments");
+          opt->as_switch(), opt = nullptr;
+        } else if (val) {
+          opt->parse(val), val = nullptr;
+          if (!opt->is_multi()) opt = nullptr;
+        }
+        goto next_arg;
+      }
+    }
+
+    if (!opt && pos.size()) { // handle positional options
+      auto *pos_opt = pos.front();
+      cout << arg << " pos: " << pos_opt->name() << endl; // TEST
+      pos_opt->parse(arg);
+      if (!pos_opt->is_pos_end()) pos.pop();
+      continue;
+    }
+
+    throw po::error("unexpected option "s + arg);
+    next_arg: ;
   }
   if (opt) {
     if (!opt->count) opt->as_switch();

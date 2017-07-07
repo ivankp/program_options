@@ -82,11 +82,11 @@ class program_options {
     auto *opt = detail::make_opt_def(x, std::move(descr), props, prop_seq{});
     opt_defs.emplace_back(opt);
 
-    // if (pos_i::size() || npos_i::size()) {
-    //   if (pos.size() && pos_i::size() && pos.back()->is_pos_end())
-    //     throw error("only one indefinite positional option can be specified");
-    //   pos.push(opt);
-    // }
+    if (pos_i::size() || npos_i::size()) {
+      if (pos.size() && pos_i::size() && pos.back()->is_pos_end())
+        throw error("only one indefinite positional option can be specified");
+      pos.push(opt);
+    }
 
     using opt_t = std::decay_t<decltype(*opt)>; // TEST
     prt_type<opt_t>(); // TEST

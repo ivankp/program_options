@@ -114,12 +114,23 @@ public:
 
   using parser_t = find_first_t<_::is_parser<T>::template type,Props...>;
 
+  static constexpr bool _is_pos =
+    is_just<pos_t>::value || is_just<npos_t>::value;
+  static constexpr bool _is_switch = std::is_same<type,bool>::value;
+
+  static_assert( !(_is_pos && _is_switch),
+    "\033[33mdefinition of positional switch option\033[0m" );
+
 private:
   // parse ----------------------------------------------------------
-  template <typename U = parser_t> inline enable_if_just_t<U>
+  template <typename U = parser_t> inline std::enable_if_t<
+    is_just<U>::value && !_is_switch>
   parse_impl(const char* arg) const { extract<parser_t>::operator()(arg,*x); }
-  template <typename U = parser_t> inline enable_if_nothing_t<U>
+  template <typename U = parser_t> inline std::enable_if_t<
+    is_nothing<U>::value && !_is_switch>
   parse_impl(const char* arg) const { arg_parser<T>()(arg,*x); }
+  template <bool S = _is_switch> static inline std::enable_if_t<S>
+  parse_impl(const char* arg) noexcept { }
 
   // switch ---------------------------------------------------------
   template <typename U = switch_init_t> inline enable_if_just_t<U>
@@ -149,19 +160,15 @@ public:
   inline void parse(const char* arg) { parse_impl(arg); ++count; }
   inline void as_switch() { as_switch_impl(); ++count; }
 
-  constexpr bool is_switch() const noexcept {
-    return std::is_same<type,bool>::value;
-  }
+  inline bool is_switch() const noexcept { return _is_switch; }
 
-  constexpr bool is_multi() const noexcept {
+  inline bool is_multi() const noexcept {
     return is_just<multi_t>::value; // TODO: or T is a container
   }
-  constexpr bool is_pos() const noexcept {
-    return is_just<pos_t>::value || is_just<npos_t>::value;
-  }
-  constexpr bool is_pos_end() const noexcept { return is_just<pos_t>::value; }
-  constexpr bool is_req() const noexcept { return is_just<req_t>::value; }
-  constexpr bool is_signed() const noexcept {
+  inline bool is_pos() const noexcept { return _is_pos; }
+  inline bool is_pos_end() const noexcept { return is_just<pos_t>::value; }
+  inline bool is_req() const noexcept { return is_just<req_t>::value; }
+  inline bool is_signed() const noexcept {
     return std::is_signed<type>::value;
   }
 };
