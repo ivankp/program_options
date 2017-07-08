@@ -69,11 +69,11 @@ void program_options::parse(int argc, char const * const * argv) {
   opt_def *opt = nullptr;
   const char* val = nullptr;
   std::string tmp; // use view here
-  bool last_was_arg = false;
+  bool last_was_val = false;
 
   for (int i=1; i<argc; ++i) {
     const char* arg = argv[i];
-    last_was_arg = false;
+    last_was_val = false;
 
     const auto opt_type = get_opt_type(arg);
     cout << arg << ' ' << opt_type << endl;
@@ -102,12 +102,12 @@ void program_options::parse(int argc, char const * const * argv) {
           check_count(opt);
           if (opt_type==context_opt) val = arg;
           if (opt->is_switch()) {
-            if (val) throw error(
+            if (val) throw po::error(
               "switch " + opt->name() + " does not take arguments");
             opt->as_switch(), opt = nullptr;
           } else if (val) {
             opt->parse(val), val = nullptr;
-            last_was_arg = true;
+            last_was_val = true;
             if (!opt->is_multi()) opt = nullptr;
           }
           goto next_arg;
@@ -118,7 +118,7 @@ void program_options::parse(int argc, char const * const * argv) {
     if (opt) {
       cout << arg << " arg of: " << opt->name() << endl; // TEST
       opt->parse(arg);
-      last_was_arg = true;
+      last_was_val = true;
       if (!opt->is_multi()) opt = nullptr;
       continue;
     }
@@ -129,7 +129,7 @@ void program_options::parse(int argc, char const * const * argv) {
       check_count(pos_opt);
       cout << arg << " pos: " << pos_opt->name() << endl; // TEST
       pos_opt->parse(arg);
-      last_was_arg = true;
+      last_was_val = true;
       if (!pos_opt->is_pos_end()) pos.pop();
       continue;
     }
@@ -139,7 +139,7 @@ void program_options::parse(int argc, char const * const * argv) {
   } // end arg loop
   if (opt) {
     if (!opt->count) opt->as_switch();
-    else if (!last_was_arg) throw po::error("dangling option " + opt->name());
+    else if (!last_was_val) throw po::error("dangling option " + opt->name());
     opt = nullptr;
   }
 }

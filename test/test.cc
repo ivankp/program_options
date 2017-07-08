@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
   try {
     using namespace ivanp::po;
     program_options()
-      (&d,'d',"Double",switch_init(4.2))
+      (&d,'d',"Double",switch_init(4.2),double_parser)
       (&b,'b',"bool switch",name("bool"))
       (&i,{"-i","--int"},"Int",multi())
       (&i,"--count","Count",pos(),
