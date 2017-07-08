@@ -69,9 +69,11 @@ void program_options::parse(int argc, char const * const * argv) {
   opt_def *opt = nullptr;
   const char* val = nullptr;
   std::string tmp; // use view here
+  bool last_was_arg = false;
 
   for (int i=1; i<argc; ++i) {
     const char* arg = argv[i];
+    last_was_arg = false;
 
     const auto opt_type = get_opt_type(arg);
     cout << arg << ' ' << opt_type << endl;
@@ -92,29 +94,33 @@ void program_options::parse(int argc, char const * const * argv) {
 
     // ==============================================================
 
+    if (!opt || (opt->is_multi() && opt->count)) {
+      for (auto& m : matchers[opt_type]) {
+        if ((*m.first)(arg)) { // match
+          opt = m.second;
+          cout << arg << " matched: " << opt->name() << endl; // TEST
+          check_count(opt);
+          if (opt_type==context_opt) val = arg;
+          if (opt->is_switch()) {
+            if (val) throw error(
+              "switch " + opt->name() + " does not take arguments");
+            opt->as_switch(), opt = nullptr;
+          } else if (val) {
+            opt->parse(val), val = nullptr;
+            last_was_arg = true;
+            if (!opt->is_multi()) opt = nullptr;
+          }
+          goto next_arg;
+        }
+      }
+    }
+
     if (opt) {
       cout << arg << " arg of: " << opt->name() << endl; // TEST
       opt->parse(arg);
+      last_was_arg = true;
       if (!opt->is_multi()) opt = nullptr;
       continue;
-    }
-
-    for (auto& m : matchers[opt_type]) {
-      if ((*m.first)(arg)) { // match
-        opt = m.second;
-        cout << arg << " matched: " << opt->name() << endl; // TEST
-        check_count(opt);
-        if (opt_type==context_opt) val = arg;
-        if (opt->is_switch()) {
-          if (val) throw error(
-            "switch " + opt->name() + " does not take arguments");
-          opt->as_switch(), opt = nullptr;
-        } else if (val) {
-          opt->parse(val), val = nullptr;
-          if (!opt->is_multi()) opt = nullptr;
-        }
-        goto next_arg;
-      }
     }
 
     // handle positional options
@@ -123,6 +129,7 @@ void program_options::parse(int argc, char const * const * argv) {
       check_count(pos_opt);
       cout << arg << " pos: " << pos_opt->name() << endl; // TEST
       pos_opt->parse(arg);
+      last_was_arg = true;
       if (!pos_opt->is_pos_end()) pos.pop();
       continue;
     }
@@ -132,7 +139,7 @@ void program_options::parse(int argc, char const * const * argv) {
   } // end arg loop
   if (opt) {
     if (!opt->count) opt->as_switch();
-    else throw po::error("dangling option " + opt->name());
+    else if (!last_was_arg) throw po::error("dangling option " + opt->name());
     opt = nullptr;
   }
 }
