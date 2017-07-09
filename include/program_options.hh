@@ -43,7 +43,7 @@ class program_options {
       "\033[33mpointer to const in program option definition\033[0m");
 
     using props_types = std::tuple<std::decay_t<Props>...>;
-    const auto props  = std::forward_as_tuple(std::forward<Props>(p)...);
+    auto props = std::forward_as_tuple(std::forward<Props>(p)...);
 
 #define UNIQUE_PROP_ASSERT(NAME) \
     using NAME##_i = indices_of<_::is_##NAME, props_types>; \
@@ -79,7 +79,8 @@ class program_options {
     static_assert( prop_seq::size() == sizeof...(Props),
       "\033[33munrecognized argument in program option definition\033[0m");
 
-    auto *opt = detail::make_opt_def(x, std::move(descr), props, prop_seq{});
+    auto *opt = detail::make_opt_def(
+      x, std::move(descr), std::move(props), prop_seq{});
     opt_defs.emplace_back(opt);
 
     if (pos_i::size() || npos_i::size()) {

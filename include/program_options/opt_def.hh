@@ -31,12 +31,9 @@ template <> struct is_req<req> : std::true_type { };
 
 template <typename T, typename F>
 struct parser {
-  // TODO: fix the place where I'm losing && on the lambda
   mutable F f;
   template <typename G> constexpr parser(G&& g): f(std::forward<G>(g)) {
-    std::cout << "&& parser" << std::endl;
-    prt_type<F>();
-    prt_type<G>();
+    std::cout << "&& parser: " << type_str<decltype(g)>() << std::endl;
   }
   inline auto operator()(const char* str, T& x) const
   noexcept(noexcept(f(str,x))) { return f(str,x); }
@@ -44,13 +41,18 @@ struct parser {
 template <typename T, typename F>
 struct parser<T,F&> {
   F& f;
-  constexpr parser(F& f): f(f) {
-    std::cout << "& parser" << std::endl;
-    prt_type<std::decay_t<F>>();
+  constexpr parser(F& g): f(g) {
+    std::cout << "& parser: " << type_str<decltype(g)>() << std::endl;
   }
   inline auto operator()(const char* str, T& x) const
   noexcept(noexcept(f(str,x))) { return f(str,x); }
 };
+// template <typename T, typename F>
+// struct parser<T,F,
+//   std::enable_if_t<std::is_pointer<std::decay_t<F>>>
+// >: std::integral_constant<F,
+// {
+// };
 
 template <typename T> struct is_parser {
   template <typename F>
@@ -206,21 +208,16 @@ template <typename T, typename Prop>
 struct prop_type_subst<T, Prop,
   std::enable_if_t< _::is_parser<T>::template type<Prop>::value >
 > { using type = _::parser<T,rm_rref_t<Prop>>; };
-//   void_t<decltype(
-//   std::declval<Prop&>()( std::declval<const char*>(), std::declval<T&>() )
-// )>> {
-//   using type = Prop;
-// };
 
 template <typename T, typename Tuple, size_t... I>
 inline auto make_opt_def(
   T* x, std::string&& descr, Tuple&& tup, std::index_sequence<I...>
 ) {
-  using type = opt_def_impl<T,
+  return new opt_def_impl<T,
     typename prop_type_subst<T,
       std::tuple_element_t<I,std::decay_t<Tuple>>
-    >::type... >;
-  return new type( x, std::move(descr), std::get<I>(tup)... );
+    >::type... >
+  ( x, std::move(descr), std::get<I>(std::forward<Tuple>(tup))... );
 }
 
 } // end namespace detail
