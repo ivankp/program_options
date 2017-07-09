@@ -9,11 +9,11 @@ template <typename T> struct rm_rref { using type = T; };
 template <typename T> struct rm_rref<T&&> { using type = T; };
 template <typename T> using rm_rref_t = typename rm_rref<T>::type;
 
-template <typename F>
-struct is_fcn_ptr: std::integral_constant<bool,
-  std::is_pointer<F>::value
-  && std::is_function<std::remove_pointer_t<F>>::value
-> { };
+// template <typename F>
+// struct is_fcn_ptr: std::integral_constant<bool,
+//   std::is_pointer<F>::value
+//   && std::is_function<std::remove_pointer_t<F>>::value
+// > { };
 
 template <typename T, typename... Args> // T(Args...)
 class is_callable {
