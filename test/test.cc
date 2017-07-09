@@ -11,6 +11,7 @@ using namespace std::string_literals;
 
 // TODO: req
 // TODO: default_init
+// TODO: make sure all tuples are forwarded so get returns the right ref type
 
 void double_parser(const char* str, double& x) {
   x = std::atof(str) * 2;
@@ -30,6 +31,8 @@ int main(int argc, char* argv[]) {
   std::string s;
   bool b = false;
 
+  std::string prog = argv[0];
+
   try {
     using namespace ivanp::po;
     program_options()
@@ -44,7 +47,10 @@ int main(int argc, char* argv[]) {
         [](const char* str, int& x){ x = strlen(str); })
       (&s,std::forward_as_tuple(
             's', [](const char* arg){ return arg[0]=='s'; }),
-          "starts with \'s\'")
+          "starts with \'s\'",
+       switch_init(prog.begin(),prog.end())
+       // switch_init()
+          )
       // (&c,".*\\.txt","ends with .txt",name{"regex"})
       .parse(argc,argv);
   } catch (const std::exception& e) {

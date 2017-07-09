@@ -12,6 +12,20 @@ template <typename... T> using void_t = typename make_void<T...>::type;
 // allows to emulate comma fold expressions
 template <typename... Args> constexpr void fold(Args...) noexcept { };
 
+// bool const
+template <bool B> using bool_constant = std::integral_constant<bool, B>;
+
+// curry
+template <template<typename,typename> typename Pred, typename T1>
+struct bind_first {
+  template <typename T2> using type = Pred<T1,T2>;
+};
+template <template<typename,typename> typename Pred, typename T2>
+struct bind_second {
+  template <typename T1> using type = Pred<T1,T2>;
+};
+
+// list type from monadic context
 template <typename T> using extract = typename T::type;
 
 // Maybe ============================================================
@@ -34,6 +48,20 @@ template <typename M, typename T = void>
 using enable_if_just_t = std::enable_if_t<is_just<M>::value,T>;
 template <typename M, typename T = void>
 using enable_if_nothing_t = std::enable_if_t<is_nothing<M>::value,T>;
+
+// is
+template <template<typename> typename Pred, typename M, bool N = false>
+struct maybe_is;
+template <template<typename> typename Pred, bool N>
+struct maybe_is<Pred,nothing,N>: bool_constant<N> { };
+template <template<typename> typename Pred, typename T, bool N>
+struct maybe_is<Pred,just<T>,N>: bool_constant<Pred<T>::value> { };
+
+// First in pack ====================================================
+template <typename...> struct first: maybe<nothing> { };
+template <typename T, typename... Other>
+struct first<T,Other...>: maybe<just<T>> { };
+template <typename... Args> using first_t = typename first<Args...>::type;
 
 // Find first =======================================================
 // first pack element matching predicate

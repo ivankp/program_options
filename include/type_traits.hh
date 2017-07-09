@@ -28,6 +28,19 @@ public:
   static constexpr bool value = type::value;
 };
 
+template <typename T, typename Arg> // T = Arg
+class is_assignable {
+  template <typename, typename = void>
+  struct impl: std::false_type { };
+  template <typename U>
+  struct impl<U,
+    void_t<decltype( std::declval<U&>() = std::declval<Arg>() )>
+  > : std::true_type { };
+public:
+  using type = impl<T>;
+  static constexpr bool value = type::value;
+};
+
 template <typename T> struct is_tuple: std::false_type { };
 template <typename... T> struct is_tuple<std::tuple<T...>>: std::true_type { };
 

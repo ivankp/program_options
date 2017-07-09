@@ -59,6 +59,10 @@ template <typename... Args> class switch_init {
   inline void construct(T& x, std::index_sequence<I...>) {
     x = { std::get<I>(args)... };
   }
+  template <typename T>
+  using direct = bool_constant<sizeof...(Args)==1 && maybe_is<
+      bind_first<is_assignable,T>::template type, first_t<Args...>
+    >::value>;
 public:
   template <typename... TT>
   switch_init(TT&&... xx): args(std::forward<TT>(xx)...) { }
@@ -66,12 +70,17 @@ public:
   switch_init(const std::tuple<TT...>& tup): args(tup) { }
   template <typename... TT>
   switch_init(std::tuple<TT...>&& tup): args(std::move(tup)) { }
-  template <typename T> inline void construct(T& x) {
+  template <typename T>
+  inline std::enable_if_t<direct<T>::value> construct(T& x) {
+    x = std::get<0>(args);
+  }
+  template <typename T>
+  inline std::enable_if_t<!direct<T>::value> construct(T& x) {
     construct(x,std::index_sequence_for<Args...>{});
   }
 };
 template <> struct switch_init<> {
-  template <typename T> inline void operator()(T& x) const { x = { }; }
+  template <typename T> inline void construct(T& x) const { x = { }; }
 };
 template <typename T> struct is_switch_init : std::false_type { };
 template <typename... T>
