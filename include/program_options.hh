@@ -36,6 +36,7 @@ class program_options {
     detail::opt_def*
   >>,3> matchers;
   std::queue<detail::opt_def*> pos;
+  std::vector<detail::opt_def*> default_init;
 
   template <typename T, typename... Props>
   inline auto* add_opt(T* x, std::string&& descr, Props&&... p) {
@@ -52,6 +53,7 @@ class program_options {
 
     UNIQUE_PROP_ASSERT(name)
     UNIQUE_PROP_ASSERT(switch_init)
+    UNIQUE_PROP_ASSERT(default_init)
     UNIQUE_PROP_ASSERT(pos)
     UNIQUE_PROP_ASSERT(npos)
     UNIQUE_PROP_ASSERT(req)
@@ -70,6 +72,7 @@ class program_options {
       parser_i,
       name_i,
       switch_init_i,
+      default_init_i,
       pos_i,
       npos_i,
       req_i,
@@ -88,6 +91,8 @@ class program_options {
         throw error("only one indefinite positional option can be specified");
       pos.push(opt);
     }
+
+    if (default_init_i::size()) default_init.push_back(opt);
 
     using opt_t = std::decay_t<decltype(*opt)>; // TEST
     prt_type<opt_t>(); // TEST

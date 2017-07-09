@@ -142,6 +142,9 @@ void program_options::parse(int argc, char const * const * argv) {
     else if (!last_was_val) throw po::error("dangling option " + opt->name());
     opt = nullptr;
   }
+
+  for (opt_def *opt : default_init) // init with default values
+    if (!opt->count) opt->default_init();
 }
 
 // FIXME

@@ -2,6 +2,7 @@
 #define IVANP_OPT_DEF_HH
 
 #include "program_options/opt_parser.hh"
+#include "program_options/opt_init.hh"
 
 namespace ivanp { namespace po {
 
@@ -53,39 +54,6 @@ template <typename T> struct is_parser<const T> {
   using type = std::false_type;
 };
 
-template <typename... Args> class switch_init {
-  std::tuple<Args...> args;
-  template <typename T, size_t... I>
-  inline void construct(T& x, std::index_sequence<I...>) {
-    x = { std::get<I>(args)... };
-  }
-  template <typename T>
-  using direct = bool_constant<sizeof...(Args)==1 && maybe_is<
-      bind_first<is_assignable,T>::template type, first_t<Args...>
-    >::value>;
-public:
-  template <typename... TT>
-  switch_init(TT&&... xx): args(std::forward<TT>(xx)...) { }
-  template <typename... TT>
-  switch_init(const std::tuple<TT...>& tup): args(tup) { }
-  template <typename... TT>
-  switch_init(std::tuple<TT...>&& tup): args(std::move(tup)) { }
-  template <typename T>
-  inline std::enable_if_t<direct<T>::value> construct(T& x) {
-    x = std::get<0>(args);
-  }
-  template <typename T>
-  inline std::enable_if_t<!direct<T>::value> construct(T& x) {
-    construct(x,std::index_sequence_for<Args...>{});
-  }
-};
-template <> struct switch_init<> {
-  template <typename T> inline void construct(T& x) const { x = { }; }
-};
-template <typename T> struct is_switch_init : std::false_type { };
-template <typename... T>
-struct is_switch_init<switch_init<T...>> : std::true_type { };
-
 } // end namespace _
 
 template <typename... Args>
@@ -94,18 +62,6 @@ constexpr _::multi multi() noexcept { return {}; }
 constexpr _::pos   pos() noexcept { return {}; }
 constexpr _::npos  pos(unsigned n) noexcept { return { n }; }
 constexpr _::req   req() noexcept { return {}; }
-template <typename... Args>
-inline _::switch_init<std::decay_t<Args>...> switch_init(Args&&... args) {
-  return { std::forward<Args>(args)... };
-}
-template <typename... Args>
-inline _::switch_init<Args...> switch_init(const std::tuple<Args...>& args) {
-  return { args };
-}
-template <typename... Args>
-inline _::switch_init<Args...> switch_init(std::tuple<Args...>&& args) {
-  return { std::move(args) };
-}
 
 namespace detail {
 
@@ -123,6 +79,7 @@ struct opt_def {
   virtual std::string name() const = 0;
   virtual void parse(const char* arg) = 0;
   virtual void as_switch() = 0;
+  virtual void default_init() = 0;
 
   virtual bool is_switch() const noexcept = 0;
   virtual bool is_multi() const noexcept = 0;
@@ -144,6 +101,7 @@ public:
 
   OPT_PROP_TYPE(name)
   OPT_PROP_TYPE(switch_init)
+  OPT_PROP_TYPE(default_init)
   OPT_PROP_TYPE(pos)
   OPT_PROP_TYPE(npos)
   OPT_PROP_TYPE(req)
@@ -182,6 +140,12 @@ private:
     is_nothing<U>::value && !std::is_same<type,bool>::value>
   as_switch_impl() const { throw error(name() + " without value"); }
 
+  // default --------------------------------------------------------
+  template <typename U = default_init_t> inline enable_if_just_t<U>
+  default_init_impl() { extract<U>::construct(*x); }
+  template <typename U = default_init_t> static inline enable_if_nothing_t<U>
+  default_init_impl() noexcept { }
+
   // name -----------------------------------------------------------
   template <typename U = name_t> inline enable_if_just_t<U,std::string>
   name_impl() const { return extract<U>::name; }
@@ -198,6 +162,7 @@ public:
 
   inline void parse(const char* arg) { parse_impl(arg); ++count; }
   inline void as_switch() { as_switch_impl(); ++count; }
+  inline void default_init() { default_init_impl(); }
 
   inline bool is_switch() const noexcept { return _is_switch; }
 

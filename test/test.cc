@@ -27,7 +27,7 @@ template <typename F>
 auto make_as_value(F f) { return as_value<F>{ f }; }
 
 int main(int argc, char* argv[]) {
-  double d, d2;
+  double d = 0, d2;
   int i;
   std::string s;
   bool b = false;
@@ -37,10 +37,10 @@ int main(int argc, char* argv[]) {
   try {
     using namespace ivanp::po;
     program_options()
-      (&d,'d',"Double",switch_init(0.1),double_parser)
-      (&d2,"--d2","Double 2",
+      (&d,'d',"Double",switch_init(0.1),double_parser,req())
+      (&d2,"--d2","1-d",
        // switch_init(std::tie(d))
-       switch_init(make_as_value([&d]{ return 1.-d; }))
+       default_init(make_as_value([&d]{ return 1.-d; }))
       )
       (&b,'b',"bool switch",name("bool"))
       (&i,{"-i","--int"},"Int",multi())
