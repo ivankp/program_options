@@ -7,6 +7,8 @@
 #include <boost/regex.hpp>
 #endif
 
+#include <sstream>
+
 namespace ivanp { namespace po {
 namespace detail {
 
@@ -17,15 +19,27 @@ namespace detail {
 struct opt_match_base {
   virtual bool operator()(const char* arg) const noexcept = 0;
   virtual ~opt_match_base() { }
+  virtual std::string str() const noexcept = 0;
 };
 
 template <typename T>
 class opt_match final : public opt_match_base {
   T m; // matching rule
+  template <typename U = T>
+  inline std::enable_if_t<!is_streamable<U>::value,std::string>
+  str_impl() const noexcept { return "?"; }
+  template <typename U = T>
+  inline std::enable_if_t<is_streamable<U>::value,std::string>
+  str_impl() const noexcept {
+    std::ostringstream ss;
+    ss << m;
+    return ss.str();
+  };
 public:
   template <typename... Args>
   opt_match(Args&&... args): m(std::forward<Args>(args)...) { }
   inline bool operator()(const char* arg) const noexcept { return m(arg); }
+  inline std::string str() const noexcept { return str_impl(); }
 };
 
 template <>

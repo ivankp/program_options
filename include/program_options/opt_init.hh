@@ -6,7 +6,7 @@
 namespace ivanp { namespace po {
 namespace _ {
 
-template <typename... Args> class init_base {
+template <typename... Args> class opt_init_base {
   std::tuple<Args...> args;
   template <typename T, size_t... I>
   inline void construct(T& x, std::index_sequence<I...>) {
@@ -18,11 +18,11 @@ template <typename... Args> class init_base {
     >::value>;
 public:
   template <typename... TT>
-  init_base(TT&&... xx): args(std::forward<TT>(xx)...) { }
+  opt_init_base(TT&&... xx): args(std::forward<TT>(xx)...) { }
   template <typename... TT>
-  init_base(const std::tuple<TT...>& tup): args(tup) { }
+  opt_init_base(const std::tuple<TT...>& tup): args(tup) { }
   template <typename... TT>
-  init_base(std::tuple<TT...>&& tup): args(std::move(tup)) { }
+  opt_init_base(std::tuple<TT...>&& tup): args(std::move(tup)) { }
   template <typename T>
   inline std::enable_if_t<direct<T>::value> construct(T& x) {
     x = std::get<0>(args);
@@ -32,15 +32,15 @@ public:
     construct(x,std::index_sequence_for<Args...>{});
   }
 };
-template <> struct init_base<> {
+template <> struct opt_init_base<> {
   template <typename T> inline void construct(T& x) const { x = { }; }
 };
 
-template <typename... Args> struct switch_init: init_base<Args...> {
-  using init_base<Args...>::init_base;
+template <typename... Args> struct switch_init: opt_init_base<Args...> {
+  using opt_init_base<Args...>::opt_init_base;
 };
-template <typename... Args> struct default_init: init_base<Args...> {
-  using init_base<Args...>::init_base;
+template <typename... Args> struct default_init: opt_init_base<Args...> {
+  using opt_init_base<Args...>::opt_init_base;
 };
 
 // detect -----------------------------------------------------------

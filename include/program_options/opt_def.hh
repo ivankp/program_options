@@ -99,9 +99,9 @@ public:
 #define OPT_PROP_TYPE(NAME) \
   using NAME##_t = find_first_t<_::is_##NAME,Props...>;
 
-  OPT_PROP_TYPE(name)
   OPT_PROP_TYPE(switch_init)
   OPT_PROP_TYPE(default_init)
+  OPT_PROP_TYPE(name)
   OPT_PROP_TYPE(pos)
   OPT_PROP_TYPE(npos)
   OPT_PROP_TYPE(req)

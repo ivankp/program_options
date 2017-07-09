@@ -17,10 +17,8 @@ template <typename T> using rm_rref_t = typename rm_rref<T>::type;
 
 template <typename T, typename... Args> // T(Args...)
 class is_callable {
-  template <typename, typename = void>
-  struct impl: std::false_type { };
-  template <typename U>
-  struct impl<U,
+  template <typename, typename = void> struct impl: std::false_type { };
+  template <typename U> struct impl<U,
     void_t<decltype( std::declval<U&>()(std::declval<Args>()...) )>
   > : std::true_type { };
 public:
@@ -30,11 +28,20 @@ public:
 
 template <typename T, typename Arg> // T = Arg
 class is_assignable {
-  template <typename, typename = void>
-  struct impl: std::false_type { };
-  template <typename U>
-  struct impl<U,
+  template <typename, typename = void> struct impl: std::false_type { };
+  template <typename U> struct impl<U,
     void_t<decltype( std::declval<U&>() = std::declval<Arg>() )>
+  > : std::true_type { };
+public:
+  using type = impl<T>;
+  static constexpr bool value = type::value;
+};
+
+template <typename T> // stream << T
+class is_streamable {
+  template <typename, typename = void> struct impl: std::false_type { };
+  template <typename U> struct impl<U,
+    void_t<decltype( std::declval<std::ostream&>() << std::declval<U>() )>
   > : std::true_type { };
 public:
   using type = impl<T>;

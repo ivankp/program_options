@@ -70,9 +70,9 @@ class program_options {
 
     using prop_seq = seq::join_t<
       parser_i,
-      name_i,
       switch_init_i,
       default_init_i,
+      name_i,
       pos_i,
       npos_i,
       req_i,
