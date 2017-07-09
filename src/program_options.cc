@@ -143,6 +143,9 @@ void program_options::parse(int argc, char const * const * argv) {
     opt = nullptr;
   }
 
+  for (opt_def *opt : req) // check required passed
+    if (!opt->count) throw error("missing required option "+opt->name());
+
   for (opt_def *opt : default_init) // init with default values
     if (!opt->count) opt->default_init();
 }

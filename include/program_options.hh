@@ -36,7 +36,7 @@ class program_options {
     detail::opt_def*
   >>,3> matchers;
   std::queue<detail::opt_def*> pos;
-  std::vector<detail::opt_def*> default_init;
+  std::vector<detail::opt_def*> req, default_init;
 
   template <typename T, typename... Props>
   inline auto* add_opt(T* x, std::string&& descr, Props&&... p) {
@@ -92,6 +92,7 @@ class program_options {
       pos.push(opt);
     }
 
+    if (req_i::size()) req.push_back(opt);
     if (default_init_i::size()) default_init.push_back(opt);
 
     using opt_t = std::decay_t<decltype(*opt)>; // TEST

@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
   try {
     using namespace ivanp::po;
     program_options()
-      (&d,'d',"Double",switch_init(0.1),double_parser,req())
+      (&d,'d',"Double",switch_init(0.1),double_parser)
       (&d2,"--d2","1-d",
        // switch_init(std::tie(d))
        default_init(make_as_value([&d]{ return 1.-d; }))
@@ -48,10 +48,7 @@ int main(int argc, char* argv[]) {
         [](const char* str, int& x){ x = strlen(str); })
       (&s,std::forward_as_tuple(
             's', [](const char* arg){ return arg[0]=='s'; }),
-          "starts with \'s\'",
-       switch_init(prog.begin(),prog.end())
-       // switch_init()
-          )
+          "starts with \'s\'", req())
       // (&c,".*\\.txt","ends with .txt",name{"regex"})
       .parse(argc,argv);
   } catch (const std::exception& e) {
