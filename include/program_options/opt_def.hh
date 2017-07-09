@@ -31,16 +31,16 @@ template <> struct is_req<req> : std::true_type { };
 
 template <typename T, typename F>
 struct parser {
-  mutable F f;
+  F f;
   template <typename G> constexpr parser(G&& g): f(std::forward<G>(g)) { }
-  inline auto operator()(const char* str, T& x) const
+  inline auto operator()(const char* str, T& x)
   noexcept(noexcept(f(str,x))) { return f(str,x); }
 };
 template <typename T, typename F>
 struct parser<T,F&> {
   F& f;
   constexpr parser(F& g): f(g) { }
-  inline auto operator()(const char* str, T& x) const
+  inline auto operator()(const char* str, T& x)
   noexcept(noexcept(f(str,x))) { return f(str,x); }
 };
 
@@ -56,7 +56,7 @@ template <typename T> struct is_parser<const T> {
 template <typename... Args> class switch_init {
   std::tuple<Args...> args;
   template <typename T, size_t... I>
-  inline void construct(T& x, std::index_sequence<I...>) const {
+  inline void construct(T& x, std::index_sequence<I...>) {
     x = { std::get<I>(args)... };
   }
 public:
@@ -66,7 +66,7 @@ public:
   switch_init(const std::tuple<TT...>& tup): args(tup) { }
   template <typename... TT>
   switch_init(std::tuple<TT...>&& tup): args(std::move(tup)) { }
-  template <typename T> inline void construct(T& x) const {
+  template <typename T> inline void construct(T& x) {
     construct(x,std::index_sequence_for<Args...>{});
   }
 };
@@ -155,16 +155,16 @@ private:
   // parse ----------------------------------------------------------
   template <typename U = parser_t> inline std::enable_if_t<
     is_just<U>::value && !_is_switch>
-  parse_impl(const char* arg) const { extract<parser_t>::operator()(arg,*x); }
+  parse_impl(const char* arg) { extract<parser_t>::operator()(arg,*x); }
   template <typename U = parser_t> inline std::enable_if_t<
     is_nothing<U>::value && !_is_switch>
-  parse_impl(const char* arg) const { arg_parser<T>()(arg,*x); }
+  parse_impl(const char* arg) { arg_parser<T>()(arg,*x); }
   template <bool S = _is_switch> static inline std::enable_if_t<S>
   parse_impl(const char* arg) noexcept { }
 
   // switch ---------------------------------------------------------
   template <typename U = switch_init_t> inline enable_if_just_t<U>
-  as_switch_impl() const { extract<U>::construct(*x); }
+  as_switch_impl() { extract<U>::construct(*x); }
   template <typename U = switch_init_t> inline std::enable_if_t<
     is_nothing<U>::value && std::is_same<type,bool>::value>
   as_switch_impl() const { (*x) = true; }
