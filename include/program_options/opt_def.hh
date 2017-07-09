@@ -32,27 +32,17 @@ template <> struct is_req<req> : std::true_type { };
 template <typename T, typename F>
 struct parser {
   mutable F f;
-  template <typename G> constexpr parser(G&& g): f(std::forward<G>(g)) {
-    std::cout << "&& parser: " << type_str<decltype(g)>() << std::endl;
-  }
+  template <typename G> constexpr parser(G&& g): f(std::forward<G>(g)) { }
   inline auto operator()(const char* str, T& x) const
   noexcept(noexcept(f(str,x))) { return f(str,x); }
 };
 template <typename T, typename F>
 struct parser<T,F&> {
   F& f;
-  constexpr parser(F& g): f(g) {
-    std::cout << "& parser: " << type_str<decltype(g)>() << std::endl;
-  }
+  constexpr parser(F& g): f(g) { }
   inline auto operator()(const char* str, T& x) const
   noexcept(noexcept(f(str,x))) { return f(str,x); }
 };
-// template <typename T, typename F>
-// struct parser<T,F,
-//   std::enable_if_t<std::is_pointer<std::decay_t<F>>>
-// >: std::integral_constant<F,
-// {
-// };
 
 template <typename T> struct is_parser {
   template <typename F>
@@ -64,14 +54,18 @@ template <typename T> struct is_parser<const T> {
 };
 
 template <typename... Args> class switch_init {
-  mutable std::tuple<Args...> args;
+  std::tuple<Args...> args;
   template <typename T, size_t... I>
   inline void construct(T& x, std::index_sequence<I...>) const {
     x = { std::get<I>(args)... };
   }
 public:
-  template <typename... T> // TODO: contruct tuple more directly
-  switch_init(std::tuple<T...>&& tup): args(std::move(tup)) { }
+  template <typename... TT>
+  switch_init(TT&&... xx): args(std::forward<TT>(xx)...) { }
+  template <typename... TT>
+  switch_init(const std::tuple<TT...>& tup): args(tup) { }
+  template <typename... TT>
+  switch_init(std::tuple<TT...>&& tup): args(std::move(tup)) { }
   template <typename T> inline void construct(T& x) const {
     construct(x,std::index_sequence_for<Args...>{});
   }
@@ -93,7 +87,15 @@ constexpr _::npos  pos(unsigned n) noexcept { return { n }; }
 constexpr _::req   req() noexcept { return {}; }
 template <typename... Args>
 inline _::switch_init<std::decay_t<Args>...> switch_init(Args&&... args) {
-  return { std::forward_as_tuple(std::forward<Args>(args)...) };
+  return { std::forward<Args>(args)... };
+}
+template <typename... Args>
+inline _::switch_init<Args...> switch_init(const std::tuple<Args...>& args) {
+  return { args };
+}
+template <typename... Args>
+inline _::switch_init<Args...> switch_init(std::tuple<Args...>&& args) {
+  return { std::move(args) };
 }
 
 namespace detail {

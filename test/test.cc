@@ -16,7 +16,7 @@ void double_parser(const char* str, double& x) {
 }
 
 int main(int argc, char* argv[]) {
-  double d;
+  double d, d2;
   int i;
   std::string s;
   bool b = false;
@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
     using namespace ivanp::po;
     program_options()
       (&d,'d',"Double",switch_init(4.2),double_parser)
+      (&d2,"--d2","Double 2",switch_init(std::tie(d)))
       (&b,'b',"bool switch",name("bool"))
       (&i,{"-i","--int"},"Int",multi())
       (&i,"--count","Count",pos(),
@@ -40,6 +41,7 @@ int main(int argc, char* argv[]) {
   }
 
   TEST( d )
+  TEST( d2 )
   TEST( i )
   TEST( s )
   TEST( b )
