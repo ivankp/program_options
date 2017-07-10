@@ -52,7 +52,7 @@ opt_type get_opt_type(const char* arg) noexcept {
 
 void check_count(detail::opt_def* opt) {
   if (!opt->is_multi() && opt->count)
-    throw error("too many options " + opt->name());
+    throw error("too many options " + opt->name);
 }
 
 void program_options::parse(int argc, char const * const * argv) {
@@ -98,12 +98,12 @@ void program_options::parse(int argc, char const * const * argv) {
       for (auto& m : matchers[opt_type]) {
         if ((*m.first)(arg)) { // match
           opt = m.second;
-          cout << arg << " matched: " << opt->name() << endl; // TEST
+          cout << arg << " matched: " << opt->name << endl; // TEST
           check_count(opt);
           if (opt_type==context_opt) val = arg;
           if (opt->is_switch()) {
             if (val) throw po::error(
-              "switch " + opt->name() + " does not take arguments");
+              "switch " + opt->name + " does not take arguments");
             opt->as_switch(), opt = nullptr;
           } else if (val) {
             opt->parse(val), val = nullptr;
@@ -116,7 +116,7 @@ void program_options::parse(int argc, char const * const * argv) {
     }
 
     if (opt) {
-      cout << arg << " arg of: " << opt->name() << endl; // TEST
+      cout << arg << " arg of: " << opt->name << endl; // TEST
       opt->parse(arg);
       last_was_val = true;
       if (!opt->is_multi()) opt = nullptr;
@@ -127,7 +127,7 @@ void program_options::parse(int argc, char const * const * argv) {
     if (opt_type==context_opt && !opt && pos.size()) {
       auto *pos_opt = pos.front();
       check_count(pos_opt);
-      cout << arg << " pos: " << pos_opt->name() << endl; // TEST
+      cout << arg << " pos: " << pos_opt->name << endl; // TEST
       pos_opt->parse(arg);
       last_was_val = true;
       if (!pos_opt->is_pos_end()) pos.pop();
@@ -139,12 +139,12 @@ void program_options::parse(int argc, char const * const * argv) {
   } // end arg loop
   if (opt) {
     if (!opt->count) opt->as_switch();
-    else if (!last_was_val) throw po::error("dangling option " + opt->name());
+    else if (!last_was_val) throw po::error("dangling option " + opt->name);
     opt = nullptr;
   }
 
   for (opt_def *opt : req) // check required passed
-    if (!opt->count) throw error("missing required option "+opt->name());
+    if (!opt->count) throw error("missing required option "+opt->name);
 
   for (opt_def *opt : default_init) // init with default values
     if (!opt->count) opt->default_init();

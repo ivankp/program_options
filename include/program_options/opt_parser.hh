@@ -21,7 +21,7 @@ template <typename T> struct arg_parser {
         '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
     }
 #else
-    std::istringstream(arg) >> x;
+    std::istringstream(arg) >> x; // FIXME: won't work with spaces
 #endif
   }
 };

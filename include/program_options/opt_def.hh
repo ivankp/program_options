@@ -11,8 +11,10 @@ namespace ivanp { namespace po {
 namespace _ {
 
 struct name { std::string name; };
-template <typename T> struct is_name : std::false_type { };
-template <> struct is_name<name> : std::true_type { };
+struct named { named(const name&) noexcept { } };
+template <typename T> struct is_named : std::false_type { };
+template <> struct is_named<named> : std::true_type { };
+template <> struct is_named<name> : std::true_type { };
 
 struct multi { };
 template <typename T> struct is_multi : std::false_type { };
@@ -71,12 +73,11 @@ namespace detail {
 // These are created as a result of calling program_options::operator()
 
 struct opt_def {
-  std::string descr;
+  std::string name, descr;
   unsigned count = 0;
 
   opt_def(std::string&& descr): descr(std::move(descr)) { }
   virtual ~opt_def() { }
-  virtual std::string name() const = 0;
   virtual void parse(const char* arg) = 0;
   virtual void as_switch() = 0;
   virtual void default_init() = 0;
@@ -87,6 +88,14 @@ struct opt_def {
   virtual bool is_pos_end() const noexcept = 0;
   virtual bool is_req() const noexcept = 0;
   virtual bool is_signed() const noexcept = 0;
+  virtual bool is_named() const noexcept = 0;
+
+  template <typename Props>
+  inline void set_name(Props&&, nothing) noexcept { }
+  template <typename Props, size_t I>
+  inline void set_name(Props&& props,
+    just<std::integral_constant<size_t,I>>
+  ) noexcept { name = std::move(std::get<I>(std::move(props)).name); }
 };
 
 template <typename T, typename... Props>
@@ -101,11 +110,11 @@ public:
 
   OPT_PROP_TYPE(switch_init)
   OPT_PROP_TYPE(default_init)
-  OPT_PROP_TYPE(name)
   OPT_PROP_TYPE(pos)
   OPT_PROP_TYPE(npos)
   OPT_PROP_TYPE(req)
   OPT_PROP_TYPE(multi)
+  OPT_PROP_TYPE(named)
 
 #undef OPT_PROP_TYPE
 
@@ -138,7 +147,7 @@ private:
   template <typename U = switch_init_t> [[noreturn]]
   inline std::enable_if_t<
     is_nothing<U>::value && !std::is_same<type,bool>::value>
-  as_switch_impl() const { throw error(name() + " without value"); }
+  as_switch_impl() const { throw error(name + " without value"); }
 
   // default --------------------------------------------------------
   template <typename U = default_init_t> inline enable_if_just_t<U>
@@ -146,19 +155,11 @@ private:
   template <typename U = default_init_t> static inline enable_if_nothing_t<U>
   default_init_impl() noexcept { }
 
-  // name -----------------------------------------------------------
-  template <typename U = name_t> inline enable_if_just_t<U,std::string>
-  name_impl() const { return extract<U>::name; }
-  template <typename U = name_t> inline enable_if_nothing_t<U,std::string>
-  name_impl() const { return descr; } // FIXME
-
 public:
   // ----------------------------------------------------------------
   template <typename... M>
   opt_def_impl(T* x, std::string&& descr, M&&... m)
   : opt_def(std::move(descr)), Props(std::forward<M>(m))..., x(x) { };
-
-  inline std::string name() const { return name_impl(); }
 
   inline void parse(const char* arg) { parse_impl(arg); ++count; }
   inline void as_switch() { as_switch_impl(); ++count; }
@@ -175,6 +176,7 @@ public:
   inline bool is_signed() const noexcept {
     return std::is_signed<type>::value;
   }
+  inline bool is_named() const noexcept { return is_just<named_t>::value; }
 };
 
 // Factory ----------------------------------------------------------
@@ -184,6 +186,10 @@ template <typename T, typename Prop>
 struct prop_type_subst<T, Prop,
   std::enable_if_t< _::is_parser<T>::template type<Prop>::value >
 > { using type = _::parser<T,rm_rref_t<Prop>>; };
+template <typename T, typename Prop>
+struct prop_type_subst<T, Prop,
+  std::enable_if_t< _::is_named<std::decay_t<Prop>>::value >
+> { using type = _::named; };
 
 template <typename T, typename Tuple, size_t... I>
 inline auto make_opt_def(

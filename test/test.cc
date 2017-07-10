@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
       (&s,std::forward_as_tuple(
             's', [](const char* arg){ return arg[0]=='s'; }),
           "starts with \'s\'", req())
-      // (&c,".*\\.txt","ends with .txt",name{"regex"})
+      // (&s,".*\\.txt","ends with .txt")
       .parse(argc,argv);
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;

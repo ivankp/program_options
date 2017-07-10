@@ -2,6 +2,7 @@
 #define IVANP_SEQ_ALG_HH
 
 #include <utility>
+#include "meta.hh"
 
 namespace ivanp { namespace seq {
 
@@ -22,10 +23,13 @@ struct join<S1,S2,SS...>: join<typename join<S1,S2>::type,SS...> { };
 
 template <typename... SS> using join_t = typename join<SS...>::type;
 
-template <typename T> struct head;
+template <typename Seq> struct head;
+template <typename T>
+struct head<std::integer_sequence<T>>: maybe<nothing> { };
 template <typename T, T Head, T... I>
 struct head<std::integer_sequence<T,Head,I...>>
-: std::integral_constant<T,Head> { };
+: maybe<just<std::integral_constant<T,Head>>> { };
+template <typename Seq> using head_t = typename head<Seq>::type;
 
 }}
 

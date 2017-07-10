@@ -25,11 +25,16 @@ struct opt_match_base {
 template <typename T>
 class opt_match final : public opt_match_base {
   T m; // matching rule
+  // this trait is here because lambdas without closure can convert to bool
+  template <typename U> using can_print = bool_constant<
+    is_streamable<U>::value &&
+    !(std::is_convertible<U,bool>::value && !std::is_pointer<U>::value) >;
   template <typename U = T>
-  inline std::enable_if_t<!is_streamable<U>::value,std::string>
+  inline std::enable_if_t<!can_print<U>::value,std::string>
   str_impl() const noexcept { return "?"; }
+  // { return cat('[',type_str<U>(),']'); }
   template <typename U = T>
-  inline std::enable_if_t<is_streamable<U>::value,std::string>
+  inline std::enable_if_t<can_print<U>::value,std::string>
   str_impl() const noexcept {
     std::ostringstream ss;
     ss << m;
@@ -47,17 +52,29 @@ inline bool opt_match<char>::operator()(const char* arg) const noexcept {
   return arg[1]==m;
 }
 template <>
+inline std::string opt_match<char>::str() const noexcept {
+  return {'-',m,'\0'};
+}
+
+template <> // defined in .cc
 bool opt_match<const char*>::operator()(const char* arg) const noexcept;
+template <>
+inline std::string opt_match<const char*>::str() const noexcept { return m; }
+
 template <>
 inline bool opt_match<std::string>::operator()(const char* arg) const noexcept {
   return m == arg;
 }
+template <>
+inline std::string opt_match<std::string>::str() const noexcept { return m; }
+
 #ifdef _GLIBCXX_REGEX
 template <>
 inline bool opt_match<std::regex>::operator()(const char* arg) const noexcept {
   return std::regex_match(arg,m);
 }
 #endif
+
 #ifdef BOOST_RE_REGEX_HPP
 template <>
 inline bool opt_match<boost::regex>::operator()(const char* arg) const noexcept {

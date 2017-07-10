@@ -51,9 +51,9 @@ class program_options {
     static_assert( NAME##_i::size() <= 1, \
       "\033[33mrepeated \"" #NAME "\" in program option definition\033[0m");
 
-    UNIQUE_PROP_ASSERT(name)
     UNIQUE_PROP_ASSERT(switch_init)
     UNIQUE_PROP_ASSERT(default_init)
+    UNIQUE_PROP_ASSERT(named)
     UNIQUE_PROP_ASSERT(pos)
     UNIQUE_PROP_ASSERT(npos)
     UNIQUE_PROP_ASSERT(req)
@@ -72,7 +72,7 @@ class program_options {
       parser_i,
       switch_init_i,
       default_init_i,
-      name_i,
+      named_i,
       pos_i,
       npos_i,
       req_i,
@@ -85,6 +85,8 @@ class program_options {
     auto *opt = detail::make_opt_def(
       x, std::move(descr), std::move(props), prop_seq{});
     opt_defs.emplace_back(opt);
+
+    opt->set_name(std::move(props),seq::head_t<named_i>{});
 
     if (pos_i::size() || npos_i::size()) {
       if (pos.size() && pos_i::size() && pos.back()->is_pos_end())
@@ -107,6 +109,11 @@ class program_options {
   ) {
     auto&& m = detail::make_opt_match(std::forward<Matcher>(matcher));
     matchers[m.second].emplace_back(std::move(m.first),opt);
+    if (!opt->is_named()) {
+      std::string& name = opt->name;
+      if (name.size()) name += ',';
+      name += m.first->str();
+    }
   }
   template <typename... M, size_t... I>
   inline void add_matches(
