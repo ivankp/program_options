@@ -13,9 +13,9 @@ template <typename... Args> class opt_init_base {
     x = { std::get<I>(args)... };
   }
   template <typename T>
-  using direct = bool_constant<sizeof...(Args)==1 && maybe_is<
+  using direct = bool_constant<sizeof...(Args)==1 && maybe_is_v<
       bind_first<is_assignable,T>::template type, first_t<Args...>
-    >::value>;
+    >>;
 public:
   template <typename... TT>
   opt_init_base(TT&&... xx): args(std::forward<TT>(xx)...) { }

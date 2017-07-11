@@ -22,19 +22,22 @@ struct opt_match_base {
   virtual std::string str() const noexcept = 0;
 };
 
+template <typename T> using oss_det = decltype(
+  std::declval<std::ostringstream&>() << std::declval<const T&>() );
+template <typename U> constexpr bool can_print =
+  is_detected_v<oss_det,U> &&
+  // this is here because lambdas without closure can convert to bool
+  !(std::is_convertible<U,bool>::value && !std::is_pointer<U>::value);
+
 template <typename T>
 class opt_match final : public opt_match_base {
   T m; // matching rule
-  // this trait is here because lambdas without closure can convert to bool
-  template <typename U> using can_print = bool_constant<
-    is_streamable<U>::value &&
-    !(std::is_convertible<U,bool>::value && !std::is_pointer<U>::value) >;
   template <typename U = T>
-  inline std::enable_if_t<!can_print<U>::value,std::string>
+  inline std::enable_if_t<!can_print<U>,std::string>
   str_impl() const noexcept { return "?"; }
   // { return cat('[',type_str<U>(),']'); }
   template <typename U = T>
-  inline std::enable_if_t<can_print<U>::value,std::string>
+  inline std::enable_if_t<can_print<U>,std::string>
   str_impl() const noexcept {
     std::ostringstream ss;
     ss << m;
