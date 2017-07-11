@@ -19,8 +19,6 @@ public:
   using type = impl<T>;
   static constexpr bool value = type::value;
 };
-template <typename T, typename... Args>
-constexpr bool is_callable_v = is_callable<T,Args...>::value;
 
 template <typename T, typename Arg> // T = Arg
 class is_assignable {
@@ -32,11 +30,29 @@ public:
   using type = impl<T>;
   static constexpr bool value = type::value;
 };
-template <typename T, typename... Args>
-constexpr bool is_assignable_v = is_assignable<T,Args...>::value;
 
 template <typename T> struct is_tuple: std::false_type { };
 template <typename... T> struct is_tuple<std::tuple<T...>>: std::true_type { };
+
+template <typename T> struct is_std_array: std::false_type { };
+template <typename T, size_t N>
+struct is_std_array<std::array<T,N>>: std::true_type { };
+
+template <typename T> struct is_std_vector: std::false_type { };
+template <typename T, typename Alloc>
+struct is_std_vector<std::vector<T,Alloc>>: std::true_type { };
+
+#ifdef __cpp_variable_templates
+template <typename T, typename... Args>
+constexpr bool is_callable_v = is_callable<T,Args...>::value;
+
+template <typename T, typename... Args>
+constexpr bool is_assignable_v = is_assignable<T,Args...>::value;
+
+template <typename T> constexpr bool is_tuple_v = is_tuple<T>::value;
+template <typename T> constexpr bool is_std_array_v = is_std_array<T>::value;
+template <typename T> constexpr bool is_std_vector_v = is_std_vector<T>::value;
+#endif
 
 } // end namespace ivanp
 

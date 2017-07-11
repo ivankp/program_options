@@ -123,7 +123,8 @@ class program_options {
 #ifdef __cpp_fold_expressions
     (add_match(std::get<I>(matchers),opt),...);
 #else
-    fold((add_match(std::get<I>(matchers),opt),0)...);
+    using discard = const char[];
+    (void)discard{(add_match(std::get<I>(matchers),opt),'\0')...};
 #endif
   }
 

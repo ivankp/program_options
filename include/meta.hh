@@ -9,9 +9,6 @@ namespace ivanp {
 template <typename... T> struct make_void { typedef void type; };
 template <typename... T> using void_t = typename make_void<T...>::type;
 
-// allows to emulate comma fold expressions
-template <typename... Args> constexpr void fold(Args...) noexcept { };
-
 // bool const
 template <bool B> using bool_constant = std::integral_constant<bool, B>;
 
