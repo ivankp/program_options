@@ -24,9 +24,8 @@ int main(int argc, char* argv[]) {
   double d = 0, d2;
   int i;
   std::string s;
+  // const char* s;
   bool b = false;
-
-  std::string prog = argv[0];
 
   try {
     using namespace ivanp::po;

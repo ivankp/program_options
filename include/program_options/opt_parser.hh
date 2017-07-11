@@ -11,20 +11,24 @@
 namespace ivanp { namespace po {
 namespace detail {
 
-template <typename T> struct arg_parser {
-  inline void operator()(const char* arg, T& x) {
+template <typename T>
+inline std::enable_if_t<!is_assignable_v<T,const char*>>
+arg_parser(const char* arg, T& x) {
 #ifdef PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
-    try {
-      x = boost::lexical_cast<T>(arg);
-    } catch (const boost::bad_lexical_cast&) {
-      throw po::error(cat(
-        '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
-    }
-#else
-    std::istringstream(arg) >> x; // FIXME: won't work with spaces
-#endif
+  try {
+    x = boost::lexical_cast<T>(arg);
+  } catch (const boost::bad_lexical_cast&) {
+    throw po::error(cat(
+      '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
   }
-};
+#else
+  std::istringstream(arg) >> x;
+#endif
+}
+
+template <typename T>
+inline std::enable_if_t<is_assignable_v<T,const char*>>
+arg_parser(const char* arg, T& x) noexcept(noexcept(x = arg)) { x = arg; }
 
 }
 }}
