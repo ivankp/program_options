@@ -3,6 +3,7 @@
 #include <vector>
 
 // #define PROGRAM_OPTIONS_STD_REGEX
+#define PROGRAM_OPTIONS_ALLOW_INT_AS_FLOAT
 #include "program_options.hh"
 
 using std::cout;

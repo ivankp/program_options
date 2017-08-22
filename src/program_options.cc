@@ -13,10 +13,8 @@ using namespace std::string_literals;
 bool is_number(const char* str) noexcept {
 // https://stackoverflow.com/q/4654636/2640636
 #ifdef PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
-  try {
-    boost::lexical_cast<double>(str);
-    return true;
-  } catch (const boost::bad_lexical_cast&) { return false; }
+  static double d;
+  return boost::conversion::try_lexical_convert(str,d);
 #else
   char* p;
   std::strtod(str,&p);
@@ -40,10 +38,8 @@ opt_type get_opt_type(const char* arg) noexcept {
   unsigned char n = 0;
   for (char c=arg[n]; c=='-'; c=arg[++n]) ;
   switch (n) {
-    case  1:
-      if (is_number(arg)) return context_opt;
-      return   short_opt;
-    case  2: return    long_opt;
+    case  1: return is_number(arg) ? context_opt : short_opt;
+    case  2: return long_opt;
     default: return context_opt;
   }
 }

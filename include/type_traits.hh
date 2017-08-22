@@ -31,6 +31,8 @@ public:
   static constexpr bool value = type::value;
 };
 
+template <typename T> using value_type = typename T::value_type;
+
 template <typename T> struct is_tuple: std::false_type { };
 template <typename... T> struct is_tuple<std::tuple<T...>>: std::true_type { };
 
@@ -48,6 +50,9 @@ constexpr bool is_callable_v = is_callable<T,Args...>::value;
 
 template <typename T, typename... Args>
 constexpr bool is_assignable_v = is_assignable<T,Args...>::value;
+
+template <typename T>
+constexpr bool has_value_type = is_detected<value_type,T>::value;
 
 template <typename T> constexpr bool is_tuple_v = is_tuple<T>::value;
 template <typename T> constexpr bool is_std_array_v = is_std_array<T>::value;

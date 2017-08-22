@@ -8,50 +8,79 @@
 #include <sstream>
 #endif
 
-#include <meta.hh>
+#include "maybe_valid.hh"
 
 namespace ivanp { namespace po {
 namespace detail {
 
+template <typename T, typename CharT=char> using detect_istream = decltype(
+  std::declval<std::basic_istream<CharT>&>() >> std::declval<T&>() );
+template <typename T>
+constexpr bool can_istream =
+  is_detected<detect_istream,T,char>::value ||
+  is_detected<detect_istream,T,wchar_t>::value;
+
 // ==================================================================
 template <typename T>
-inline std::enable_if_t<!is_assignable_v<T,const char*>,void_t<decltype(
+inline std::enable_if_t<is_assignable_v<T,const char*>>
+arg_parser(const char* arg, T& var) noexcept(noexcept(var=arg)) { var = arg; }
+
+// NOTE: try_lexical_convert fails on static_assert rather than sfinae
+// can_istream<T> may not be a perfect test for it's validity
+template <typename T>
+inline std::enable_if_t<!is_assignable_v<T,const char*> && can_istream<T>>
+arg_parser(const char* arg, T& var) {
 #ifdef PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
-  boost::conversion::try_lexical_convert(std::declval<const char*>(),std::declval<T&>())
-#else
-  std::istringstream(std::declval<const char*>()) >> std::declval<T&>()
+  if (boost::conversion::try_lexical_convert(arg,var)) return;
+#ifdef PROGRAM_OPTIONS_ALLOW_INT_AS_FLOAT
+  else if
+#ifdef __cpp_if_constexpr
+    constexpr
 #endif
-)>> arg_parser(const char* arg, T& var) {
-#ifdef PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
-  if (!boost::conversion::try_lexical_convert(arg,var))
-    throw po::error(cat(
-      '\"',arg,"\" cannot be interpreted as ",type_str<T>()));
+  (std::is_integral<T>::value) {
+    double d;
+    if (boost::conversion::try_lexical_convert(arg,d)) {
+      var = d;
+      if (d-double(var)!=0.) {
+        std::cerr << "\033[33mWarning\033[0m: "
+          "lossy conversion from double to " << type_str<T>()
+          << " in program option argument ("
+          << d << " to " << var << ')'
+          << std::endl;
+      }
+      return;
+    }
+  }
+#endif
+  throw po::error(cat('\"',arg,"\" cannot be interpreted as ",type_str<T>()));
 #else
   std::istringstream(arg) >> var;
 #endif
 }
 
-template <typename T>
-inline std::enable_if_t<is_assignable_v<T,const char*>>
-arg_parser(const char* arg, T& var) noexcept(noexcept(var = arg)) { var = arg; }
-
 // ==================================================================
-template <typename T> using detect_parser = decltype(
+template <typename T> using parser_void_t = decltype(
   arg_parser(std::declval<const char*>(),std::declval<T&>()) );
 template <typename T>
-constexpr bool can_parse = is_detected<detect_parser,T>::value;
-
-template <typename T> using value_type = typename T::value_type;
-template <typename T>
-constexpr bool has_value_type = is_detected<value_type,T>::value;
+constexpr bool can_parse = is_detected<parser_void_t,T>::value;
 
 // ==================================================================
-#ifdef SFINAE_EXPR
-#error macro named 'SFINAE_EXPR' already defined
+template <typename T>
+inline std::enable_if_t<has_value_type<T>>
+arg_emplacer(const char* arg, T& var); // FWD
+
+template <typename T>
+inline parser_void_t<T>
+arg_applicator(const char* arg, T& var) { arg_parser(arg,var); }
+
+template <typename T>
+inline std::enable_if_t<!can_parse<T> && has_value_type<T>>
+arg_applicator(const char* arg, T& var) { arg_emplacer(arg,var); };
+
+#ifdef EMPLACE_TEST
+#error macro named 'EMPLACE_TEST' already defined
 #endif
-#define SFINAE_EXPR(EXPR) \
-    [](T& var, value_type&& x) \
-    noexcept(noexcept(EXPR)) -> void_t<decltype(EXPR)> { EXPR; }
+#define EMPLACE_TEST(EXPR) SFINAE_EXPR(EXPR, auto& var, auto&& x)
 
 template <typename T>
 inline std::enable_if_t<has_value_type<T>>
@@ -60,13 +89,12 @@ arg_emplacer(const char* arg, T& var) {
   value_type x;
 
   static auto maybe_emplace = first_valid(
-    SFINAE_EXPR( var.emplace_back (std::move(x)) ),
-    SFINAE_EXPR( var.push_back    (std::move(x)) ),
-    SFINAE_EXPR( var.emplace      (std::move(x)) ),
-    SFINAE_EXPR( var.push         (std::move(x)) ),
-    SFINAE_EXPR( var.emplace_front(std::move(x)) ),
-    SFINAE_EXPR( var.push_front   (std::move(x)) ),
-    SFINAE_EXPR( var <<            std::move(x)  )
+    EMPLACE_TEST( var.emplace_back (std::move(x)) ),
+    EMPLACE_TEST( var.push_back    (std::move(x)) ),
+    EMPLACE_TEST( var.emplace      (std::move(x)) ),
+    EMPLACE_TEST( var.push         (std::move(x)) ),
+    EMPLACE_TEST( var.emplace_front(std::move(x)) ),
+    EMPLACE_TEST( var.push_front   (std::move(x)) )
   );
 
   arg_applicator(arg,x);
@@ -76,16 +104,9 @@ arg_emplacer(const char* arg, T& var) {
     "at least one expression in maybe_emplace must be valid" );
 }
 
-#undef SFINAE_EXPR
+#undef EMPLACE_TEST
 
 // ==================================================================
-template <typename T>
-inline std::enable_if_t<can_parse<T>>
-arg_applicator(const char* arg, T& var) { arg_parser(arg,var); }
-
-template <typename T>
-inline std::enable_if_t<!can_parse<T> && has_value_type<T>>
-arg_applicator(const char* arg, T& var) { arg_emplacer(arg,var); };
 
 } // end detail
 }}
