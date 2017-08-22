@@ -22,31 +22,49 @@ struct bind_second {
   template <typename T1> using type = Pred<T1,T2>;
 };
 
-// list type from monadic context
+// lift type from monadic context
 template <typename T> using extract = typename T::type;
 
 // Maybe ============================================================
 struct nothing { };
 template <typename T> struct just { using type = T; };
-template <typename T> struct maybe;
-template <> struct maybe<nothing> { using type = nothing; };
-template <typename T> struct maybe<just<T>> { using type = just<T>; };
 
-template <typename T> struct is_nothing;
+template <typename T> struct is_nothing: std::false_type { };
 template <> struct is_nothing<nothing>: std::true_type { };
-template <typename T> struct is_nothing<just<T>>: std::false_type { };
 
-template <typename T> struct is_just;
-template <> struct is_just<nothing>: std::false_type { };
+template <typename T> struct is_just: std::false_type { };
 template <typename T> struct is_just<just<T>>: std::true_type { };
 
-// enable
+template <typename T> struct maybe {
+  static_assert(is_just<T>::value || is_nothing<T>::value);
+  using type = T;
+};
+
+// Maybe value ------------------------------------------------------
+template <typename T> struct just_value {
+  constexpr const T& operator*() const noexcept { return value; }
+  constexpr T& operator*() noexcept { return value; }
+private:
+  T value;
+};
+template <> struct just_value<void> {
+  constexpr void operator*() const noexcept { }
+  constexpr void operator*() noexcept { }
+};
+template <typename T> struct is_just_value: std::false_type { };
+template <typename T> struct is_just_value<just_value<T>>: std::true_type { };
+
+template <typename T> struct maybe_value : public T {
+  static_assert(is_just_value<T>::value || is_nothing<T>::value);
+};
+
+// maybe enable -----------------------------------------------------
 template <typename M, typename T = void>
 using enable_if_just_t = std::enable_if_t<is_just<M>::value,T>;
 template <typename M, typename T = void>
 using enable_if_nothing_t = std::enable_if_t<is_nothing<M>::value,T>;
 
-// is
+// maybe is ---------------------------------------------------------
 template <template<typename> typename Pred, typename M, bool N = false>
 struct maybe_is;
 template <template<typename> typename Pred, bool N>
@@ -82,6 +100,27 @@ public:
 
 template <template<typename> typename Pred, typename... Args>
 using find_first_t = typename find_first<Pred,Args...>::type;
+
+// Find first index =================================================
+namespace detail {
+template <template<typename> typename Pred, size_t I, typename... Args>
+struct first_index_impl: maybe<nothing> { };
+
+template <template<typename> typename Pred, size_t I,
+          typename Arg1, typename... Args>
+class first_index_impl<Pred,I,Arg1,Args...> {
+  template <typename, typename = void>
+  struct impl: first_index_impl<Pred,I+1,Args...> { };
+  template <typename Arg>
+  struct impl<Arg,std::enable_if_t<Pred<Arg>::value>>
+  : maybe<just<std::integral_constant<size_t,I>>> { };
+public:
+  using type = typename impl<Arg1>::type;
+};
+}
+
+template <template<typename> typename Pred, typename... Args>
+using first_index = typename detail::first_index_impl<Pred,0,Args...>::type;
 
 // Detect ===========================================================
 // http://en.cppreference.com/w/cpp/experimental/is_detected
@@ -123,11 +162,78 @@ template <template<class...> class Op, class... Args>
 constexpr bool is_detected_v = is_detected<Op, Args...>::value;
 
 template <class Expected, template<class...> class Op, class... Args>
-constexpr bool is_detected_exact_v = is_detected_exact<Expected, Op, Args...>::value;
+constexpr bool is_detected_exact_v =
+  is_detected_exact<Expected, Op, Args...>::value;
 
 template <class To, template<class...> class Op, class... Args>
-constexpr bool is_detected_convertible_v = is_detected_convertible<To, Op, Args...>::value;
+constexpr bool is_detected_convertible_v =
+  is_detected_convertible<To, Op, Args...>::value;
 #endif
+
+// maybe valid ======================================================
+// based on hana::sfinae
+template <typename F>
+class maybe_valid_wrap {
+  F f;
+
+  template <typename... Args>
+  using ret_t = decltype(f(std::declval<Args&&>()...));
+
+public:
+  template <typename... Args>
+  using is_valid = is_detected<ret_t,Args...>;
+
+  template <typename T>
+  constexpr maybe_valid_wrap(T&& x): f(std::forward<T>(x)) { }
+
+  template <typename... Args>
+  constexpr just_value<ret_t<Args...>> operator()(Args&&... args)
+  noexcept(noexcept(f(std::forward<Args>(args)...)))
+  { return f(std::forward<Args>(args)...); }
+
+  template <typename... Args>
+  constexpr std::enable_if_t<!is_valid<Args...>::value,nothing>
+  operator()(Args&&...) noexcept { return {}; }
+};
+
+template <typename F>
+constexpr maybe_valid_wrap<F> maybe_valid(F&& f)
+noexcept(noexcept(maybe_valid_wrap<F>{std::forward<F>(f)}))
+{ return { std::forward<F>(f) }; }
+
+template <typename... Args>
+struct is_valid_pred {
+  template <typename F>
+  using type = typename F::template is_valid<Args...>;
+};
+
+template <typename... Fs>
+class first_valid_wrap {
+  std::tuple<maybe_valid_wrap<Fs>...> fs;
+
+  template <typename... Args>
+  using index = first_index<
+    is_valid_pred<Args...>::template type, maybe_valid_wrap<Fs>...  >;
+
+public:
+  template <typename... _Fs>
+  first_valid_wrap(_Fs&&... fs): fs(std::forward<_Fs>(fs)...) { }
+
+  template <typename... Args, typename Index = index<Args...>,
+            enable_if_just_t<Index,size_t> I = extract<Index>::value>
+  constexpr decltype(auto) operator()(Args&&... args)
+  noexcept(noexcept(std::get<I>(fs)(std::forward<Args>(args)...)))
+  { return std::get<I>(fs)(std::forward<Args>(args)...); }
+
+  template <typename... Args, typename Index = index<Args...>>
+  constexpr enable_if_nothing_t<Index,nothing>
+  operator()(Args&&... args) noexcept { return { }; }
+};
+
+template <typename... Fs>
+constexpr first_valid_wrap<Fs...> first_valid(Fs&&... fs)
+noexcept(noexcept(first_valid_wrap<Fs...>{std::forward<Fs>(fs)...}))
+{ return { std::forward<Fs>(fs)... }; }
 
 } // end namespace ivanp
 

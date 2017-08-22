@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 // #define PROGRAM_OPTIONS_STD_REGEX
 #include "program_options.hh"
@@ -22,7 +23,7 @@ template <typename F> auto as_value(F f) {
 
 int main(int argc, char* argv[]) {
   double d = 0, d2;
-  int i;
+  std::vector<int> i;
   std::string s;
   // const char* s;
   bool b = false;
@@ -38,7 +39,7 @@ int main(int argc, char* argv[]) {
       (&b,'b',"bool switch",name("bool"))
       (&i,{"-i","--int"},"Int",multi())
       (&i,"--count","Count",pos(),
-        [](const char* str, int& x){ x = strlen(str); })
+        [](const char* str, decltype(i)& x){ x.push_back(strlen(str)); })
       (&s,std::forward_as_tuple(
             's', [](const char* arg){ return arg[0]=='s'; }),
           "starts with \'s\'", req())
@@ -51,7 +52,10 @@ int main(int argc, char* argv[]) {
 
   TEST( d )
   TEST( d2 )
-  TEST( i )
+  cout << "i:";
+  for (int i : i) cout << ' ' << i;
+  cout << endl;
+  // TEST( i )
   TEST( s )
   TEST( b )
 

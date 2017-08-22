@@ -80,7 +80,8 @@ class program_options {
     >;
 
     static_assert( prop_seq::size() == sizeof...(Props),
-      "\033[33munrecognized argument in program option definition\033[0m");
+      "\033[33munrecognized argument in program option definition;"
+      " check parser call signature\033[0m");
 
     auto *opt = detail::make_opt_def(
       x, std::move(descr), std::move(props), prop_seq{});
