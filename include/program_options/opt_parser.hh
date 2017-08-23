@@ -17,18 +17,6 @@ inline void arg_parser(const char* arg, T& var);
 
 namespace detail {
 
-template <typename T> constexpr bool is_optional = false;
-#ifdef BOOST_OPTIONAL_FLC_19NOV2002_HPP
-template <typename T> constexpr bool is_optional<boost::optional<T>> = true;
-#endif
-#ifdef _GLIBCXX_EXPERIMENTAL_OPTIONAL
-template <typename T> constexpr bool is_optional<
-  std::experimental::optional<T>> = true;
-#endif
-#ifdef _GLIBCXX_OPTIONAL
-template <typename T> constexpr bool is_optional<std::optional<T>> = true;
-#endif
-
 // 0. Assign ========================================================
 template <size_t I, typename T> struct arg_parser_sfinae: std::true_type { };
 template <typename T>
