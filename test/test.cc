@@ -2,6 +2,8 @@
 #include <cstring>
 #include <vector>
 
+#include <boost/optional.hpp>
+
 // #define PROGRAM_OPTIONS_STD_REGEX
 #define PROGRAM_OPTIONS_ALLOW_INT_AS_FLOAT
 #include "program_options.hh"
@@ -12,7 +14,6 @@ using std::endl;
 using namespace std::string_literals;
 
 // TODO: make sure all tuples are forwarded so get returns the right ref type
-// TODO: containers
 
 void double_parser(const char* str, double& x) {
   x = std::atof(str) * 2;
@@ -22,12 +23,21 @@ template <typename F> auto as_value(F f) {
   return ( struct { F f; operator decltype(f())() { return f(); } } ){ f };
 }
 
+namespace ivanp { namespace po {
+template <>
+inline void arg_parser<std::string>(const char* arg, std::string& var) {
+  for (; arg[0]=='s'; ++arg) { }
+  var = arg;
+}
+}}
+
 int main(int argc, char* argv[]) {
   double d = 0, d2;
   std::vector<int> i;
   std::string s;
+  // boost::optional<std::string> s;
   // const char* s;
-  bool b = false;
+  boost::optional<bool> b = false;
 
   try {
     using namespace ivanp::po;
@@ -43,7 +53,7 @@ int main(int argc, char* argv[]) {
         [](const char* str, decltype(i)& x){ x.push_back(strlen(str)); })
       (&s,std::forward_as_tuple(
             's', [](const char* arg){ return arg[0]=='s'; }),
-          "starts with \'s\'", req())
+          "starts with \'s\'"/*, req()*/)
       // (&s,".*\\.txt","ends with .txt")
       .parse(argc,argv);
   } catch (const std::exception& e) {
@@ -57,8 +67,12 @@ int main(int argc, char* argv[]) {
   for (int i : i) cout << ' ' << i;
   cout << endl;
   // TEST( i )
+  // if (s) cout << "s = " << *s << endl;
+  // else cout << "s undefined" << endl;
   TEST( s )
-  TEST( b )
+  if (b) cout << "b = " << *b << endl;
+  else cout << "b undefined" << endl;
+  // TEST( b )
 
   return 0;
 }

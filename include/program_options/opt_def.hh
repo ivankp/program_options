@@ -134,7 +134,7 @@ private:
   parse_impl(const char* arg) { extract<parser_t>::operator()(arg,*x); }
   template <typename U = parser_t> inline std::enable_if_t<
     is_nothing<U>::value && !_is_switch>
-  parse_impl(const char* arg) { arg_applicator(arg,*x); }
+  parse_impl(const char* arg) { ivanp::po::arg_parser(arg,*x); }
   template <bool S = _is_switch> static inline std::enable_if_t<S>
   parse_impl(const char* arg) noexcept { }
 

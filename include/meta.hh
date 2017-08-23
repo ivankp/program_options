@@ -9,9 +9,6 @@ namespace ivanp {
 template <typename... T> struct make_void { typedef void type; };
 template <typename... T> using void_t = typename make_void<T...>::type;
 
-// bool const
-template <bool B> using bool_constant = std::integral_constant<bool, B>;
-
 // curry
 template <template<typename,typename> typename Pred, typename T1>
 struct bind_first {
@@ -24,6 +21,32 @@ struct bind_second {
 
 // lift type from monadic context
 template <typename T> using extract = typename T::type;
+
+// Logical ==========================================================
+// bool const
+template <bool B> using bool_constant = std::integral_constant<bool, B>;
+
+// AND
+template <class...> struct conjunction: std::true_type { };
+template <class B1> struct conjunction<B1>: B1 { };
+template <class B1, class... Bs>
+struct conjunction<B1, Bs...> 
+  : std::conditional_t<bool(B1::value), conjunction<Bs...>, B1> { };
+// OR
+template <class...> struct disjunction: std::false_type { };
+template <class B1> struct disjunction<B1>: B1 { };
+template <class B1, class... Bs>
+struct disjunction<B1, Bs...> 
+  : std::conditional_t<bool(B1::value), B1, disjunction<Bs...>> { };
+// NOT
+template <class B> struct negation: bool_constant<!bool(B::value)> { };
+
+// Only last
+template <typename...> struct only_last: std::false_type { };
+template <typename B1> struct only_last<B1>: bool_constant<B1::value> { };
+template <typename B1, typename... Bs>
+struct only_last<B1, Bs...>
+  : bool_constant<!B1::value && only_last<Bs...>::value> { };
 
 // Maybe ============================================================
 struct nothing { };
@@ -169,6 +192,19 @@ template <class To, template<class...> class Op, class... Args>
 constexpr bool is_detected_convertible_v =
   is_detected_convertible<To, Op, Args...>::value;
 #endif
+
+// Enable version ===================================================
+namespace detail {
+template <template<size_t,class...> class, typename, typename...>
+struct enable_ver_impl;
+template <template<size_t,class...> class Pred, size_t... I, typename... Args>
+struct enable_ver_impl<Pred,std::index_sequence<I...>,Args...>
+  : std::enable_if< only_last<Pred<I,Args...>...>::value > { };
+} // end namespace detail
+
+template <template<size_t,class...> class Pred, size_t I, typename... Args>
+using enable_ver = typename detail::enable_ver_impl<
+  Pred, std::make_index_sequence<I+1>, Args... >::type;
 
 } // end namespace ivanp
 
