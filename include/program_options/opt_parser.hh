@@ -10,8 +10,6 @@
 
 #include "maybe_valid.hh"
 
-template <typename...> struct bad_type;
-
 namespace ivanp { namespace po {
 
 template <typename T>
@@ -19,16 +17,30 @@ inline void arg_parser(const char* arg, T& var);
 
 namespace detail {
 
-// 0. Assignable ====================================================
+template <typename T> constexpr bool is_optional = false;
+#ifdef BOOST_OPTIONAL_FLC_19NOV2002_HPP
+template <typename T> constexpr bool is_optional<boost::optional<T>> = true;
+#endif
+#ifdef _GLIBCXX_EXPERIMENTAL_OPTIONAL
+template <typename T> constexpr bool is_optional<
+  std::experimental::optional<T>> = true;
+#endif
+#ifdef _GLIBCXX_OPTIONAL
+template <typename T> constexpr bool is_optional<std::optional<T>> = true;
+#endif
+
+// 0. Assign ========================================================
 template <size_t I, typename T> struct arg_parser_sfinae: std::true_type { };
 template <typename T>
-struct arg_parser_sfinae<0,T>: is_assignable<T,const char*> { };
+struct arg_parser_sfinae<0,T>: bool_constant<
+  is_assignable_v<T,const char*> && !is_optional<T>
+> { };
 
 template <typename T>
 inline enable_ver<arg_parser_sfinae,0,T>
 arg_parser_impl(const char* arg, T& var) noexcept(noexcept(var=arg)) { var = arg; }
 
-// 1. Container =====================================================
+// 1. Emplace =======================================================
 #ifdef EMPLACE_TEST
 #error macro named 'EMPLACE_TEST' already defined
 #endif
@@ -64,28 +76,7 @@ arg_parser_impl(const char* arg, T& var) {
   maybe_emplace(var,std::move(x));
 }
 
-// bad_type< bool_constant<arg_parser_sfinae<0,const char*>::value> > bad0;
-// bad_type< bool_constant<arg_parser_sfinae<0,double>::value> > bad0;
-// bad_type< bool_constant<only_last<arg_parser_sfinae<0,const char*>>::value> > bad0;
-// bad_type< enable_ver_seq<arg_parser_sfinae,0,const char*> > bad0;
-// bad_type< enable_ver<arg_parser_sfinae,0,const char*> > bad0;
-// bad_type< enable_ver<arg_parser_sfinae,1,std::vector<double>> > bad1;
-// bad_type< enable_ver<arg_parser_sfinae,2,double> > bad2;
-
-// 2. Lexical cast or stream ========================================
-// template <typename T, typename CharT=char> using detect_istream = decltype(
-//   std::declval<std::basic_istream<CharT>&>() >> std::declval<T&>() );
-// template <typename T>
-// constexpr bool can_istream =
-//   is_detected<detect_istream,T,char>::value ||
-//   is_detected<detect_istream,T,wchar_t>::value;
-
-// template <typename T>
-// struct arg_parser_sfinae<2,T>: std::true_type { };
-// struct arg_parser_sfinae<2,T>: bool_constant< can_istream<T> > { };
-
-// NOTE: try_lexical_convert fails on static_assert rather than sfinae
-// can_istream<T> may not be a perfect test for it's validity
+// 2. lexical_cast or stream ========================================
 template <typename T>
 inline enable_ver<arg_parser_sfinae,2,T>
 arg_parser_impl(const char* arg, T& var) {

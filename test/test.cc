@@ -26,8 +26,10 @@ template <typename F> auto as_value(F f) {
 namespace ivanp { namespace po {
 template <>
 inline void arg_parser<std::string>(const char* arg, std::string& var) {
-  for (; arg[0]=='s'; ++arg) { }
+  // for (; arg[0]=='s'; ++arg) { }
   var = arg;
+  for (unsigned i=0; var[i]!='\0'; ++i)
+    if (var[i]=='s') var[i] = '*';
 }
 }}
 
@@ -60,6 +62,14 @@ int main(int argc, char* argv[]) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;
     return 1;
   }
+
+  TEST( (ivanp::po::detail::arg_parser_sfinae<0,boost::optional<bool>>::value) )
+  TEST( (ivanp::po::detail::arg_parser_sfinae<1,boost::optional<bool>>::value) )
+  TEST( (ivanp::po::detail::arg_parser_sfinae<2,boost::optional<bool>>::value) )
+
+  TEST( (ivanp::po::detail::arg_parser_sfinae<0,bool>::value) )
+  TEST( (ivanp::po::detail::arg_parser_sfinae<1,bool>::value) )
+  TEST( (ivanp::po::detail::arg_parser_sfinae<2,bool>::value) )
 
   TEST( d )
   TEST( d2 )
