@@ -146,6 +146,32 @@ void program_options::parse(int argc, char const * const * argv) {
     if (!opt->count) opt->default_init();
 }
 
+inline bool streq_ignorecase(const char* str, const char* s1) {
+  const char *a=str, *b=s1;
+  for (; *a!='\0' && *b!='\0'; ++a, ++b)
+    if (toupper(*a) != toupper(*b)) return false;
+  return *a=='\0' && *b=='\0';
+}
+template <typename S1>
+inline bool streq_any_ignorecase(const char* str, S1 s1) {
+  return streq_ignorecase(str,s1);
+}
+template <typename S1, typename... Ss>
+inline bool streq_any_ignorecase(const char* str, S1 s1, Ss... ss) {
+  return streq_ignorecase(str,s1) || streq_any_ignorecase(str,ss...);
+}
+
+namespace detail {
+
+template <>
+void arg_parser_impl<bool>(const char* arg, bool& var) {
+  if (streq_any_ignorecase(arg,"1","TRUE","YES","ON")) var = true;
+  else if (streq_any_ignorecase(arg,"0","FALSE","NO","OFF")) var = false;
+  else throw po::error(cat('\"',arg,"\" cannot be interpreted as bool"));
+}
+
+}
+
 // FIXME
 // void program_options::help() {
 //   cout << "help" << endl;

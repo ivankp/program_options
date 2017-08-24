@@ -193,18 +193,20 @@ constexpr bool is_detected_convertible_v =
   is_detected_convertible<To, Op, Args...>::value;
 #endif
 
-// Enable version ===================================================
+// Enable case ======================================================
 namespace detail {
 template <template<size_t,class...> class, typename, typename...>
-struct enable_ver_impl;
+struct is_case_impl;
 template <template<size_t,class...> class Pred, size_t... I, typename... Args>
-struct enable_ver_impl<Pred,std::index_sequence<I...>,Args...>
-  : std::enable_if< only_last<Pred<I,Args...>...>::value > { };
+struct is_case_impl<Pred,std::index_sequence<I...>,Args...>
+  : only_last<Pred<I,Args...>...> { };
 } // end namespace detail
 
 template <template<size_t,class...> class Pred, size_t I, typename... Args>
-using enable_ver = typename detail::enable_ver_impl<
-  Pred, std::make_index_sequence<I+1>, Args... >::type;
+using is_case = detail::is_case_impl<Pred, std::make_index_sequence<I+1>, Args...>;
+
+template <template<size_t,class...> class Pred, size_t I, typename... Args>
+using enable_case = std::enable_if_t<is_case<Pred,I,Args...>::value>;
 
 } // end namespace ivanp
 

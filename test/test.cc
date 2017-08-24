@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   std::string s;
   // boost::optional<std::string> s;
   // const char* s;
-  boost::optional<bool> b = false;
+  boost::optional<bool> b;
 
   try {
     using namespace ivanp::po;
@@ -63,13 +63,12 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  TEST( (ivanp::po::detail::arg_parser_sfinae<0,boost::optional<bool>>::value) )
-  TEST( (ivanp::po::detail::arg_parser_sfinae<1,boost::optional<bool>>::value) )
-  TEST( (ivanp::po::detail::arg_parser_sfinae<2,boost::optional<bool>>::value) )
+  TEST( (ivanp::po::detail::can_emplace<decltype(i),int>) )
+  // TEST( (ivanp::po::detail::can_emplace<decltype(i),const char*>) )
 
-  TEST( (ivanp::po::detail::arg_parser_sfinae<0,bool>::value) )
-  TEST( (ivanp::po::detail::arg_parser_sfinae<1,bool>::value) )
-  TEST( (ivanp::po::detail::arg_parser_sfinae<2,bool>::value) )
+  // TEST( (ivanp::po::detail::arg_parser_switch<1,decltype(i)>::test) )
+  // TEST( (ivanp::po::detail::arg_parser_switch<1,bool>::test) )
+  // TEST( (ivanp::po::detail::arg_parser_switch<1,int>::test) )
 
   TEST( d )
   TEST( d2 )
