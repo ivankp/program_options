@@ -1,12 +1,22 @@
 #include <iostream>
-#include <type_traits>
+#include <vector>
+#include <set>
 
-#include "meta.hh"
-#include "type.hh"
+#include "program_options.hh"
+
+using ivanp::po::detail::maybe_emplace;
 
 int main(int argc, char* argv[]) {
-  
-  prt_type<ivanp::find_first_t<std::is_integral,double,float,int,char>>();
-  prt_type<ivanp::find_first_t<std::is_integral,double,float>>();
+
+  std::multiset<int> x;
+
+  // maybe_emplace(x,"hello");
+  maybe_emplace(x,0);
+  x.emplace(0);
+  x.emplace("");
+
+  // TEST( x[0] )
+  // TEST( x.count("hello") )
+  TEST( x.count(0) )
 
 }

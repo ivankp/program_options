@@ -17,22 +17,19 @@ inline void arg_parser(const char* arg, T& var);
 
 namespace detail {
 
-template <typename T, typename U, typename = void>
-struct value_type_is_same: std::false_type { };
-template <typename T, typename U>
-struct value_type_is_same< T, U, void_t<value_type<T>> >
-  : std::is_same<value_type<T>,U> { };
-
 // 0. Assign ========================================================
 template <size_t I, typename T> struct arg_parser_switch: std::true_type { };
 template <typename T>
 struct arg_parser_switch<0,T>: conjunction<
-  is_assignable<T,const char*>, negation<value_type_is_same<T,bool>>
+  is_assignable<T,const char*>,
+  negation<value_type_trait<std::is_same,T,bool>>
 > { };
 
 template <typename T>
 inline enable_case<arg_parser_switch,0,T>
-arg_parser_impl(const char* arg, T& var) { var = arg; }
+arg_parser_impl(const char* arg, T& var) { var = arg;
+  std::cout << __PRETTY_FUNCTION__ << std::endl;
+}
 
 // Emplace 1. directly; 2. value_type ===============================
 #ifdef EMPLACE_TEST
@@ -58,9 +55,10 @@ constexpr bool can_emplace = !is_nothing<decltype(maybe_emplace(
 // ------------------------------------------------------------------
 
 template <typename T>
-struct arg_parser_switch<1,T>: bool_constant<
-  false> { };
-  // can_emplace<T,const char*> > { };
+struct arg_parser_switch<1,T>: conjunction<
+  value_type_trait<is_constructible,T,const char*>,
+  negation<value_type_trait<std::is_same,T,bool>>
+> { };
 
 template <typename T>
 inline enable_case<arg_parser_switch,1,T>

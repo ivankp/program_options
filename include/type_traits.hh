@@ -16,8 +16,17 @@ class is_callable {
     void_t<decltype( std::declval<U&>()(std::declval<Args>()...) )>
   > : std::true_type { };
 public:
-  using type = impl<T>;
-  static constexpr bool value = type::value;
+  static constexpr bool value = impl<T>::value;
+};
+
+template <typename T, typename... Args> // T(Args...)
+class is_constructible {
+  template <typename, typename = void> struct impl: std::false_type { };
+  template <typename U> struct impl<U,
+    void_t<decltype( U(std::declval<Args>()...) )>
+  > : std::true_type { };
+public:
+  static constexpr bool value = impl<T>::value;
 };
 
 template <typename T, typename Arg> // T = Arg
@@ -27,8 +36,7 @@ class is_assignable {
     void_t<decltype( std::declval<U&>() = std::declval<Arg>() )>
   > : std::true_type { };
 public:
-  using type = impl<T>;
-  static constexpr bool value = type::value;
+  static constexpr bool value = impl<T>::value;
 };
 
 template <typename T> using value_type = typename T::value_type;
@@ -57,20 +65,27 @@ constexpr bool has_value_type = is_detected<value_type,T>::value;
 template <typename T> constexpr bool is_tuple_v = is_tuple<T>::value;
 template <typename T> constexpr bool is_std_array_v = is_std_array<T>::value;
 template <typename T> constexpr bool is_std_vector_v = is_std_vector<T>::value;
-
-template <typename T> constexpr bool is_optional = false;
-#ifdef BOOST_OPTIONAL_FLC_19NOV2002_HPP
-template <typename T> constexpr bool is_optional<boost::optional<T>> = true;
-#endif
-#ifdef _GLIBCXX_EXPERIMENTAL_OPTIONAL
-template <typename T> constexpr bool is_optional<
-  std::experimental::optional<T>> = true;
-#endif
-#ifdef _GLIBCXX_OPTIONAL
-template <typename T> constexpr bool is_optional<std::optional<T>> = true;
 #endif
 
-#endif
+template <template<typename,typename...> typename Pred,
+          typename T, typename... Args>
+class value_type_trait {
+  template <typename, typename = void> struct impl: std::false_type { };
+  template <typename U> struct impl<U, void_t<value_type<U>> >
+    : Pred<value_type<U>,Args...> { };
+public:
+  static constexpr bool value = impl<T>::value;
+};
+
+// template <template<typename...> typename... Preds>
+// struct pred_conjunction {
+//   template <typename... Args> struct pred: conjunction<Preds<Args...>...> { };
+// };
+//
+// template <template<typename...> typename Pred>
+// struct pred_negation {
+//   template <typename... Args> struct pred: negation<Pred<Args...>> { };
+// };
 
 } // end namespace ivanp
 

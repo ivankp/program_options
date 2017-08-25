@@ -49,7 +49,7 @@ struct parser<T,F&> {
 
 template <typename T> struct is_parser {
   template <typename F>
-  using type = typename is_callable<F,const char*,T&>::type;
+  using type = bool_constant<is_callable<F,const char*,T&>::value>;
 };
 template <typename T> struct is_parser<const T> {
   template <typename F>

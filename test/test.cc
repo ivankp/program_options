@@ -26,7 +26,6 @@ template <typename F> auto as_value(F f) {
 namespace ivanp { namespace po {
 template <>
 inline void arg_parser<std::string>(const char* arg, std::string& var) {
-  // for (; arg[0]=='s'; ++arg) { }
   var = arg;
   for (unsigned i=0; var[i]!='\0'; ++i)
     if (var[i]=='s') var[i] = '*';
@@ -34,6 +33,7 @@ inline void arg_parser<std::string>(const char* arg, std::string& var) {
 }}
 
 int main(int argc, char* argv[]) {
+  cout << std::boolalpha;
   double d = 0, d2;
   std::vector<int> i;
   std::string s;
@@ -62,13 +62,6 @@ int main(int argc, char* argv[]) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;
     return 1;
   }
-
-  TEST( (ivanp::po::detail::can_emplace<decltype(i),int>) )
-  // TEST( (ivanp::po::detail::can_emplace<decltype(i),const char*>) )
-
-  // TEST( (ivanp::po::detail::arg_parser_switch<1,decltype(i)>::test) )
-  // TEST( (ivanp::po::detail::arg_parser_switch<1,bool>::test) )
-  // TEST( (ivanp::po::detail::arg_parser_switch<1,int>::test) )
 
   TEST( d )
   TEST( d2 )
