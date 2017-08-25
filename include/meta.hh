@@ -14,9 +14,9 @@ template <template<typename,typename> typename Pred, typename T1>
 struct bind_first {
   template <typename T2> using type = Pred<T1,T2>;
 };
-template <template<typename,typename> typename Pred, typename T2>
-struct bind_second {
-  template <typename T1> using type = Pred<T1,T2>;
+template <template<typename,typename...> typename Pred, typename... T2>
+struct bind_tail {
+  template <typename T1> using type = Pred<T1,T2...>;
 };
 
 // lift type from monadic context
@@ -207,6 +207,16 @@ using is_case = detail::is_case_impl<Pred, std::make_index_sequence<I+1>, Args..
 
 template <template<size_t,class...> class Pred, size_t I, typename... Args>
 using enable_case = std::enable_if_t<is_case<Pred,I,Args...>::value>;
+
+// template <template<typename...> typename... Preds>
+// struct pred_conjunction {
+//   template <typename... Args> struct pred: conjunction<Preds<Args...>...> { };
+// };
+//
+// template <template<typename...> typename Pred>
+// struct pred_negation {
+//   template <typename... Args> struct pred: negation<Pred<Args...>> { };
+// };
 
 } // end namespace ivanp
 

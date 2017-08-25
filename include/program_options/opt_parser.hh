@@ -17,12 +17,17 @@ inline void arg_parser(const char* arg, T& var);
 
 namespace detail {
 
+template <typename T>
+using value_type_not_bool = negation< maybe_is<
+  bind_tail<std::is_same,bool>::template type,
+  m_value_type<T> > >;
+
 // 0. Assign ========================================================
 template <size_t I, typename T> struct arg_parser_switch: std::true_type { };
 template <typename T>
 struct arg_parser_switch<0,T>: conjunction<
   is_assignable<T,const char*>,
-  negation<value_type_trait<std::is_same,T,bool>>
+  value_type_not_bool<T>
 > { };
 
 template <typename T>
@@ -31,7 +36,7 @@ arg_parser_impl(const char* arg, T& var) { var = arg;
   std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
-// Emplace 1. directly; 2. value_type ===============================
+// Emplace ==========================================================
 #ifdef EMPLACE_TEST
 #error macro named 'EMPLACE_TEST' already defined
 #endif
@@ -49,36 +54,32 @@ auto maybe_emplace = first_valid(
 #undef EMPLACE_TEST
 
 template <typename Var, typename X>
-constexpr bool can_emplace = !is_nothing<decltype(maybe_emplace(
-  std::declval<Var&>(), std::declval<X>() ))>::value;
+using can_emplace = is_just_value<decltype(maybe_emplace(
+  std::declval<Var&>(), std::declval<X>() ))>;
 
-// ------------------------------------------------------------------
-
+// 1. Emplace directly ==============================================
 template <typename T>
 struct arg_parser_switch<1,T>: conjunction<
-  value_type_trait<is_constructible,T,const char*>,
-  negation<value_type_trait<std::is_same,T,bool>>
+  maybe_is<
+    bind_tail<is_constructible,const char*>::template type,
+    m_value_type<T> >,
+  value_type_not_bool<T>
 > { };
 
 template <typename T>
 inline enable_case<arg_parser_switch,1,T>
 arg_parser_impl(const char* arg, T& var) { maybe_emplace(var,arg); }
 
-// ------------------------------------------------------------------
-
-template <typename T, typename = void>
-struct can_emplace_value_type: std::false_type { };
+// 2. Emplace value_type ============================================
 template <typename T>
-struct can_emplace_value_type< T, void_t<value_type<T>> >: bool_constant<
-  can_emplace<T,value_type<T>&&> > { };
-
-template <typename T>
-struct arg_parser_switch<2,T>: can_emplace_value_type<T> { };
+struct arg_parser_switch<2,T>: maybe_is<
+  bind_first<can_emplace,T>::template type,
+  m_value_type<T> > { };
 
 template <typename T>
 inline enable_case<arg_parser_switch,2,T>
 arg_parser_impl(const char* arg, T& var) {
-  value_type<T> x;
+  typename T::value_type x;
   arg_parser(arg,x);
   maybe_emplace(var,std::move(x));
 }
