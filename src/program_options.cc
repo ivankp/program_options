@@ -165,7 +165,7 @@ namespace detail {
 
 template <>
 void arg_parser_impl<bool>(const char* arg, bool& var) {
-  if (streq_any_ignorecase(arg,"1","TRUE","YES","ON")) var = true;
+  if (streq_any_ignorecase(arg,"1","TRUE","YES","ON","Y")) var = true;
   else if (streq_any_ignorecase(arg,"0","FALSE","NO","OFF")) var = false;
   else throw po::error(cat('\"',arg,"\" cannot be interpreted as bool"));
 }

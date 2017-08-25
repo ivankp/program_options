@@ -37,27 +37,27 @@ arg_parser_impl(const char* arg, T& var) { var = arg;
 }
 
 // Emplace ==========================================================
-#ifdef EMPLACE_TEST
-#error macro named 'EMPLACE_TEST' already defined
+#ifdef EMPLACE_EXPR
+#error macro named 'EMPLACE_EXPR' already defined
 #endif
-#define EMPLACE_TEST(EXPR) SFINAE_EXPR(EXPR, auto& var, auto&& x)
+#define EMPLACE_EXPR(EXPR) SFINAE_EXPR(EXPR, auto& var, auto&& x)
 
 auto maybe_emplace = first_valid(
-  EMPLACE_TEST( var.emplace_back (std::move(x)) ),
-  EMPLACE_TEST( var.push_back    (std::move(x)) ),
-  EMPLACE_TEST( var.emplace      (std::move(x)) ),
-  EMPLACE_TEST( var.push         (std::move(x)) ),
-  EMPLACE_TEST( var.emplace_front(std::move(x)) ),
-  EMPLACE_TEST( var.push_front   (std::move(x)) )
+  EMPLACE_EXPR( var.emplace_back (std::move(x)) ),
+  EMPLACE_EXPR( var.push_back    (std::move(x)) ),
+  EMPLACE_EXPR( var.emplace      (std::move(x)) ),
+  EMPLACE_EXPR( var.push         (std::move(x)) ),
+  EMPLACE_EXPR( var.emplace_front(std::move(x)) ),
+  EMPLACE_EXPR( var.push_front   (std::move(x)) )
 );
 
-#undef EMPLACE_TEST
+#undef EMPLACE_EXPR
 
 template <typename Var, typename X>
 using can_emplace = is_just_value<decltype(maybe_emplace(
-  std::declval<Var&>(), std::declval<X>() ))>;
+  std::declval<Var&>(), std::declval<X&&>() ))>;
 
-// 1. Emplace directly ==============================================
+// 1. Emplace const char* ===========================================
 template <typename T>
 struct arg_parser_switch<1,T>: conjunction<
   maybe_is<
