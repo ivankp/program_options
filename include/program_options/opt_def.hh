@@ -131,7 +131,7 @@ private:
   // parse ----------------------------------------------------------
   template <typename U = parser_t> inline std::enable_if_t<
     is_just<U>::value && !_is_switch>
-  parse_impl(const char* arg) { extract<parser_t>::operator()(arg,*x); }
+  parse_impl(const char* arg) { parser_t::type::operator()(arg,*x); }
   template <typename U = parser_t> inline std::enable_if_t<
     is_nothing<U>::value && !_is_switch>
   parse_impl(const char* arg) { ivanp::po::arg_parser(arg,*x); }
@@ -140,7 +140,7 @@ private:
 
   // switch ---------------------------------------------------------
   template <typename U = switch_init_t> inline enable_if_just_t<U>
-  as_switch_impl() { extract<U>::construct(*x); }
+  as_switch_impl() { U::type::construct(*x); }
   template <typename U = switch_init_t> inline std::enable_if_t<
     is_nothing<U>::value && std::is_same<type,bool>::value>
   as_switch_impl() const { (*x) = true; }
@@ -151,7 +151,7 @@ private:
 
   // default --------------------------------------------------------
   template <typename U = default_init_t> inline enable_if_just_t<U>
-  default_init_impl() { extract<U>::construct(*x); }
+  default_init_impl() { U::type::construct(*x); }
   template <typename U = default_init_t> static inline enable_if_nothing_t<U>
   default_init_impl() noexcept { }
 

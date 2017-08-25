@@ -61,7 +61,7 @@ public:
   first_valid_wrap(_Fs&&... fs): fs(std::forward<_Fs>(fs)...) { }
 
   template <typename... Args, typename Index = index<Args...>,
-            enable_if_just_t<Index,size_t> I = extract<Index>::value>
+            enable_if_just_t<Index,size_t> I = Index::type::value>
   constexpr decltype(auto) operator()(Args&&... args)
   noexcept(noexcept(std::get<I>(fs)(std::forward<Args>(args)...)))
   { return std::get<I>(fs)(std::forward<Args>(args)...); }

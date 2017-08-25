@@ -19,9 +19,6 @@ struct bind_tail {
   template <typename T1> using type = Pred<T1,T2...>;
 };
 
-// lift type from monadic context
-template <typename T> using extract = typename T::type;
-
 // Logical ==========================================================
 // bool const
 template <bool B> using bool_constant = std::integral_constant<bool, B>;
