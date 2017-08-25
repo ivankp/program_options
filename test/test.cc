@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <array>
 
 #include <boost/optional.hpp>
 
@@ -40,6 +41,7 @@ int main(int argc, char* argv[]) {
   // boost::optional<std::string> s;
   // const char* s;
   boost::optional<bool> b;
+  std::tuple<double,int> tup {1,2};
 
   try {
     using namespace ivanp::po;
@@ -57,6 +59,7 @@ int main(int argc, char* argv[]) {
             's', [](const char* arg){ return arg[0]=='s'; }),
           "starts with \'s\'"/*, req()*/)
       // (&s,".*\\.txt","ends with .txt")
+      (&tup,{"--tup","-t"},"tuple")
       .parse(argc,argv);
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;
@@ -75,6 +78,8 @@ int main(int argc, char* argv[]) {
   if (b) cout << "b = " << *b << endl;
   else cout << "b undefined" << endl;
   // TEST( b )
+  TEST( std::get<0>(tup) )
+  TEST( std::get<1>(tup) )
 
   return 0;
 }

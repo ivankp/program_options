@@ -32,9 +32,7 @@ struct arg_parser_switch<0,T>: conjunction<
 
 template <typename T>
 inline enable_case<arg_parser_switch,0,T>
-arg_parser_impl(const char* arg, T& var) { var = arg;
-  std::cout << __PRETTY_FUNCTION__ << std::endl;
-}
+arg_parser_impl(const char* arg, T& var) { var = arg; }
 
 // Emplace ==========================================================
 #ifdef EMPLACE_EXPR
@@ -84,9 +82,39 @@ arg_parser_impl(const char* arg, T& var) {
   maybe_emplace(var,std::move(x));
 }
 
-// 3. lexical_cast or stream ========================================
+// 3. pair, array, tuple ============================================
+template <typename T>
+using tuple_size_t = decltype(std::tuple_size<T>::value);
+
+template <typename T>
+struct arg_parser_switch<3,T>: is_detected<tuple_size_t,T> { };
+
+template <size_t I, typename T>
+inline std::enable_if_t<(I==std::tuple_size<T>::value)>
+parse_elem(const char*, const T&) noexcept {
+  static_assert(I>0,"use of type with tuple_size==0 in program options");
+}
+
+template <size_t I, typename T>
+inline std::enable_if_t<(I+1==std::tuple_size<T>::value)>
+parse_elem(const char* arg, T& tup) { arg_parser(arg,std::get<I>(tup)); }
+
+template <size_t I, typename T>
+inline std::enable_if_t<(I+1<std::tuple_size<T>::value)>
+parse_elem(const char* arg, T& tup) {
+  int n = 0;
+  while (arg[n]!=':' && arg[n]!='\0') ++n;
+  arg_parser(std::string(arg,n).c_str(),std::get<I>(tup));
+  if (arg[n]!='\0') parse_elem<I+1>(arg+n+1,tup);
+}
+
 template <typename T>
 inline enable_case<arg_parser_switch,3,T>
+arg_parser_impl(const char* arg, T& var) { parse_elem<0>(arg,var); }
+
+// 4. lexical_cast or stream ========================================
+template <typename T>
+inline enable_case<arg_parser_switch,4,T>
 arg_parser_impl(const char* arg, T& var) {
 #ifdef PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
   if (boost::conversion::try_lexical_convert(arg,var)) return;
