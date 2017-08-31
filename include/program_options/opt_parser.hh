@@ -71,7 +71,7 @@ struct arg_parser_switch<2,T>: maybe_is<
 template <typename T>
 inline enable_case<arg_parser_switch,2,T>
 arg_parser_impl(const char* arg, T& var) {
-  typename T::value_type x; // TODO: deal with const
+  rm_const_elements_t<typename T::value_type> x;
   arg_parser(arg,x);
   maybe_emplace(var,std::move(x));
 }
@@ -93,8 +93,10 @@ parse_elem(const char*, const T&) noexcept {
 // get if mutable
 template <size_t I, typename T>
 inline decltype(auto) mget(T& tup) {
-  static_assert(!std::is_const<std::tuple_element_t<I,T>>::value,
-    ASSERT_MSG("const ref in program_options arg_parser"));
+  constexpr bool is_const = std::is_const<
+    std::remove_reference_t< std::tuple_element_t<I,T> > >::value;
+  static_assert(!is_const,
+    ASSERT_MSG("const tuple_element type in program options"));
   return std::get<I>(tup);
 }
 

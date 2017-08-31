@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
         default_init(as_value([&d]{ return 1.-d; }))
       )
       (b,'b',"bool switch",name("bool"))
-      (i,{"-i","--int"},"Int",multi())
+      (i,{"-i","--int"},"Int")
       (i,"--count","Count",pos(),
         [](const char* str, decltype(i)& x){ x.push_back(strlen(str)); })
       (s,std::forward_as_tuple(
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
           "starts with \'s\'"/*, req()*/)
       // (&s,".*\\.txt","ends with .txt")
       (tup,{"--tup","-t"},ivanp::cat(type_str<decltype(tup)>()))
-      // (m,'m',ivanp::cat(type_str<decltype(m)>()))
+      (m,'m',ivanp::cat(type_str<decltype(m)>()),multi())
       .parse(argc,argv)) return 0;
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;
@@ -86,6 +86,9 @@ int main(int argc, char* argv[]) {
   // TEST( b )
   TEST( std::get<0>(tup) )
   TEST( std::get<1>(tup) )
+  cout << "m:";
+  for (const auto& x : m) cout << ' ' << x.first << ':' << x.second;
+  cout << endl;
 
   return 0;
 }
