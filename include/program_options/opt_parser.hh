@@ -71,14 +71,14 @@ struct arg_parser_switch<2,T>: maybe_is<
 template <typename T>
 inline enable_case<arg_parser_switch,2,T>
 arg_parser_impl(const char* arg, T& var) {
-  typename T::value_type x;
+  typename T::value_type x; // TODO: deal with const
   arg_parser(arg,x);
   maybe_emplace(var,std::move(x));
 }
 
 // 3. pair, array, tuple ============================================
 template <typename T>
-using tuple_size_t = decltype(std::tuple_size<T>::value);
+using tuple_size_t = decltype(std::tuple_size<std::decay_t<T>>::value);
 
 template <typename T>
 struct arg_parser_switch<3,T>: is_detected<tuple_size_t,T> { };

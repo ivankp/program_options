@@ -2,6 +2,7 @@
 #include <cstring>
 #include <vector>
 #include <array>
+#include <map>
 
 #include <boost/optional.hpp>
 
@@ -45,6 +46,7 @@ int main(int argc, char* argv[]) {
   // const char* s;
   boost::optional<bool> b;
   std::tuple<double,int> tup {1,2};
+  std::map<std::string,double> m;
 
   try {
     using namespace ivanp::po;
@@ -62,7 +64,8 @@ int main(int argc, char* argv[]) {
             's', [](const char* arg){ return arg[0]=='s'; }),
           "starts with \'s\'"/*, req()*/)
       // (&s,".*\\.txt","ends with .txt")
-      (tup,{"--tup","-t"},"tuple")
+      (tup,{"--tup","-t"},ivanp::cat(type_str<decltype(tup)>()))
+      // (m,'m',ivanp::cat(type_str<decltype(m)>()))
       .parse(argc,argv)) return 0;
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;

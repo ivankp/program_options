@@ -126,7 +126,7 @@ make_opt_match_impl(T&& x, opt_match_tag<TagT>) {
 #endif
   if (t==short_opt) {
     if (x[2]!='\0') throw po::error(
-      "short arg "+std::string(x)+" defined with more than one char");
+      "short arg ",x," defined with more than one char");
     return { new opt_match<char>( x[1] ), t };
   } else {
     return { new opt_match<TagT>( std::forward<T>(x) ), t };

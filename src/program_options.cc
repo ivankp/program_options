@@ -137,7 +137,7 @@ bool program_options::parse(int argc, char const * const * argv) {
       continue;
     }
 
-    throw po::error("unexpected option "s + arg);
+    throw po::error("unexpected option ",arg);
     next_arg: ;
   } // end arg loop
   if (opt) {
