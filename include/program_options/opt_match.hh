@@ -30,8 +30,7 @@ class opt_match final : public opt_match_base {
   T m; // matching rule
   template <typename U = T>
   inline std::enable_if_t<!can_print<U>,std::string>
-  str_impl() const noexcept { return "λ"; } // ƒ
-  // { return cat('[',type_str<U>(),']'); }
+  str_impl() const noexcept { return "λ"; }
   template <typename U = T>
   inline std::enable_if_t<can_print<U>,std::string>
   str_impl() const noexcept {
@@ -69,14 +68,14 @@ inline bool opt_match<std::string>::operator()(const char* arg) const noexcept {
 template <>
 inline std::string opt_match<std::string>::str() const noexcept { return m; }
 
-#ifdef _GLIBCXX_REGEX
+#ifdef PROGRAM_OPTIONS_STD_REGEX
 template <>
 inline bool opt_match<std::regex>::operator()(const char* arg) const noexcept {
   return std::regex_match(arg,m);
 }
 #endif
 
-#ifdef BOOST_RE_REGEX_HPP
+#ifdef PROGRAM_OPTIONS_BOOST_REGEX
 template <>
 inline bool opt_match<boost::regex>::operator()(const char* arg) const noexcept {
   return boost::regex_match(arg,m);

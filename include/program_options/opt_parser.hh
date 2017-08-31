@@ -2,14 +2,6 @@
 #define IVANP_OPT_PARSER_HH
 
 #include "program_options/fwd/opt_parser.hh"
-
-#if __has_include(<boost/lexical_cast/try_lexical_convert.hpp>)
-#define PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
-#include <boost/lexical_cast/try_lexical_convert.hpp>
-#else
-#include <sstream>
-#endif
-
 #include "maybe_valid.hh"
 
 namespace ivanp { namespace po {

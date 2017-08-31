@@ -141,7 +141,8 @@ public:
   inline bool is_switch() const noexcept { return _is_switch; }
 
   inline bool is_multi() const noexcept {
-    return is_just<multi_t>::value; // TODO: or T is a container
+    // allow `std::vector`s to automatically be multi
+    return disjunction<is_just<multi_t>,is_std_vector<T>>::value;
   }
   inline bool is_pos() const noexcept { return _is_pos; }
   inline bool is_pos_end() const noexcept { return is_just<pos_t>::value; }

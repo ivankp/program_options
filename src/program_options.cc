@@ -4,7 +4,6 @@
 
 #define IVANP_PROGRAM_OPTIONS_CC
 #include "program_options.hh"
-// TODO: forward declarations instead of full header?
 
 using std::cout;
 using std::cerr;
@@ -94,7 +93,9 @@ void program_options::parse(int argc, char const * const * argv) {
       for (auto& m : matchers[opt_type]) {
         if ((*m.first)(arg)) { // match
           opt = m.second;
-          cout << arg << " matched: " << opt->name << endl; // TEST
+#ifdef PROGRAM_OPTIONS_DEBUG
+          cout << arg << " matched: " << opt->name << endl;
+#endif
           check_count(opt);
           if (opt_type==context_opt) val = arg;
           if (opt->is_switch()) {
@@ -112,7 +113,9 @@ void program_options::parse(int argc, char const * const * argv) {
     }
 
     if (opt) {
-      cout << arg << " arg of: " << opt->name << endl; // TEST
+#ifdef PROGRAM_OPTIONS_DEBUG
+      cout << arg << " arg of: " << opt->name << endl;
+#endif
       opt->parse(arg);
       last_was_val = true;
       if (!opt->is_multi()) opt = nullptr;
@@ -123,7 +126,9 @@ void program_options::parse(int argc, char const * const * argv) {
     if (opt_type==context_opt && !opt && pos.size()) {
       auto *pos_opt = pos.front();
       check_count(pos_opt);
-      cout << arg << " pos: " << pos_opt->name << endl; // TEST
+#ifdef PROGRAM_OPTIONS_DEBUG
+      cout << arg << " pos: " << pos_opt->name << endl;
+#endif
       pos_opt->parse(arg);
       last_was_val = true;
       if (!pos_opt->is_pos_end()) pos.pop();
@@ -171,8 +176,7 @@ void arg_parser_impl_bool(const char* arg, bool& var) {
 
 }
 
-// FIXME
-// void program_options::help() {
+// void program_options::help() { // FIXME
 //   cout << "help" << endl;
 // }
 

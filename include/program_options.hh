@@ -9,9 +9,6 @@
 #include <type_traits>
 #include <stdexcept>
 
-#define TEST(var) \
-  std::cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << std::endl;
-
 #include "type.hh"
 #include "type_traits.hh"
 #include "catstr.hh"
@@ -109,8 +106,10 @@ class program_options {
     if (req_i::size()) req.push_back(opt);
     if (default_init_i::size()) default_init.push_back(opt);
 
-    using opt_t = std::decay_t<decltype(*opt)>; // TEST
-    prt_type<opt_t>(); // TEST
+#ifdef PROGRAM_OPTIONS_DEBUG
+    using opt_t = std::decay_t<decltype(*opt)>;
+    prt_type<opt_t>();
+#endif
 
     return opt;
   }
