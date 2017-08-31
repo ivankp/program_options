@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <cstring>
 #include <stdexcept>
 
@@ -50,16 +51,17 @@ void check_count(detail::opt_def* opt) {
     throw error("too many options " + opt->name);
 }
 
-void program_options::parse(int argc, char const * const * argv) {
+bool program_options::parse(int argc, char const * const * argv) {
   using namespace ::ivanp::po::detail;
-  // for (int i=1; i<argc; ++i) {
-  //   for (const auto& m : help_matchers) {
-  //     if ((*m)(argv[i])) {
-  //       help();
-  //       return;
-  //     }
-  //   }
-  // }
+  // --help takes precedence over everything else
+  for (int i=1; i<argc; ++i) {
+    for (const char* h : help_flags) {
+      if (!strcmp(h,argv[i])) {
+        help();
+        return true;
+      }
+    }
+  }
 
   opt_def *opt = nullptr;
   const char* val = nullptr;
@@ -149,6 +151,8 @@ void program_options::parse(int argc, char const * const * argv) {
 
   for (opt_def *opt : default_init) // init with default values
     if (!opt->count) opt->default_init();
+
+  return false;
 }
 
 inline bool streq_ignorecase(const char* str, const char* s1) {
@@ -176,8 +180,24 @@ void arg_parser_impl_bool(const char* arg, bool& var) {
 
 }
 
-// void program_options::help() { // FIXME
-//   cout << "help" << endl;
-// }
+void program_options::help() { // FIXME
+  // https://stackoverflow.com/a/4063229/2640636
+  cout << "*** help ***" << endl;
+  unsigned max_name_len = 0;
+  for (const auto& opt : opt_defs) {
+    const unsigned len = opt->name.size();
+    for (unsigned i=0; i<len; ++i)
+      cout << opt->name[i] << ':' << int(opt->name[i]) << '\n';
+    cout /* << opt->name */ << '|' << len << endl;
+    if (len > max_name_len) max_name_len = len;
+  }
+  max_name_len += 2;
+  for (const auto& opt : opt_defs) {
+    cout << std::left << std::setw(max_name_len)
+         << opt->name
+         << opt->descr << '\n';
+  }
+  cout.flush();
+}
 
 }} // end namespace ivanp

@@ -37,6 +37,7 @@ struct error : std::runtime_error {
 namespace ivanp { namespace po {
 
 class program_options {
+  std::vector<const char*> help_flags;
   std::vector<std::unique_ptr<detail::opt_def>> opt_defs;
   std::array<std::vector<std::pair<
     std::unique_ptr<const detail::opt_match_base>,
@@ -175,8 +176,13 @@ public:
 #endif // CC
 
 public:
-  void parse(int argc, char const * const * argv);
-  // void help(); // FIXME
+  program_options(): help_flags{"-h","--help"} { };
+  program_options(std::initializer_list<const char*> flags)
+  : help_flags(flags) { };
+
+  bool parse(int argc, char const * const * argv);
+
+  void help();
 };
 
 }} // end namespace ivanp

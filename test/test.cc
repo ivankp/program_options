@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
 
   try {
     using namespace ivanp::po;
-    program_options()
+    if (program_options() // test for help
       (d,'d',"Double",switch_init(0.1),double_parser)
       (d2,"--d2","1-d",
         // switch_init(std::tie(d))
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
           "starts with \'s\'"/*, req()*/)
       // (&s,".*\\.txt","ends with .txt")
       (tup,{"--tup","-t"},"tuple")
-      .parse(argc,argv);
+      .parse(argc,argv)) return 0;
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;
     return 1;
