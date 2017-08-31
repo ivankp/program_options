@@ -26,8 +26,16 @@ struct error : std::runtime_error {
 };
 }}
 
+#ifndef IVANP_PROGRAM_OPTIONS_CC
 #include "program_options/opt_match.hh"
+#include "program_options/opt_parser.hh"
+#include "program_options/opt_init.hh"
 #include "program_options/opt_def.hh"
+#else
+#include "program_options/fwd/opt_match.hh"
+#include "program_options/fwd/opt_parser.hh"
+#include "program_options/fwd/opt_def.hh"
+#endif
 
 namespace ivanp { namespace po {
 
@@ -40,6 +48,7 @@ class program_options {
   std::queue<detail::opt_def*> pos;
   std::vector<detail::opt_def*> req, default_init;
 
+#ifndef IVANP_PROGRAM_OPTIONS_CC
   template <typename T, typename... Props>
   inline auto* add_opt(T* x, std::string&& descr, Props&&... p) {
     static_assert( !std::is_const<T>::value,
@@ -132,9 +141,6 @@ class program_options {
   }
 
 public:
-  void parse(int argc, char const * const * argv);
-  // void help(); // FIXME
-
   template <typename T, typename... Props>
   program_options& operator()(T* x,
     std::initializer_list<const char*> matchers,
@@ -167,6 +173,11 @@ public:
     add_matches(matchers,opt,std::index_sequence_for<Matchers...>{});
     return *this;
   }
+#endif // CC
+
+public:
+  void parse(int argc, char const * const * argv);
+  // void help(); // FIXME
 };
 
 }} // end namespace ivanp

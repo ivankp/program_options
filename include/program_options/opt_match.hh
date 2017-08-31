@@ -1,6 +1,8 @@
 #ifndef IVANP_OPT_MATCH_HH
 #define IVANP_OPT_MATCH_HH
 
+#include "program_options/fwd/opt_match.hh"
+
 #ifdef PROGRAM_OPTIONS_STD_REGEX
 #include <regex>
 #elif defined(PROGRAM_OPTIONS_BOOST_REGEX)
@@ -16,12 +18,6 @@ namespace detail {
 // These represent rules for matching program arguments with argument
 // definitions
 
-struct opt_match_base {
-  virtual bool operator()(const char* arg) const noexcept = 0;
-  virtual ~opt_match_base() { }
-  virtual std::string str() const noexcept = 0;
-};
-
 template <typename T> using oss_det = decltype(
   std::declval<std::ostringstream&>() << std::declval<const T&>() );
 template <typename U> constexpr bool can_print =
@@ -34,7 +30,7 @@ class opt_match final : public opt_match_base {
   T m; // matching rule
   template <typename U = T>
   inline std::enable_if_t<!can_print<U>,std::string>
-  str_impl() const noexcept { return "?"; }
+  str_impl() const noexcept { return "λ"; } // ƒ
   // { return cat('[',type_str<U>(),']'); }
   template <typename U = T>
   inline std::enable_if_t<can_print<U>,std::string>
@@ -59,8 +55,10 @@ inline std::string opt_match<char>::str() const noexcept {
   return {'-',m,'\0'};
 }
 
-template <> // defined in .cc
-bool opt_match<const char*>::operator()(const char* arg) const noexcept;
+template <>
+inline bool opt_match<const char*>::operator()(const char* arg) const noexcept {
+  return opt_match_impl_chars(arg,m);
+}
 template <>
 inline std::string opt_match<const char*>::str() const noexcept { return m; }
 
@@ -86,8 +84,6 @@ inline bool opt_match<boost::regex>::operator()(const char* arg) const noexcept 
 #endif
 
 // Argument type ----------------------------------------------------
-
-enum opt_type { long_opt, short_opt, context_opt };
 
 opt_type get_opt_type(const char* arg) noexcept;
 inline opt_type get_opt_type(const std::string& arg) noexcept {

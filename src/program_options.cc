@@ -2,6 +2,7 @@
 #include <cstring>
 #include <stdexcept>
 
+#define IVANP_PROGRAM_OPTIONS_CC
 #include "program_options.hh"
 // TODO: forward declarations instead of full header?
 
@@ -26,8 +27,7 @@ namespace ivanp { namespace po {
 
 namespace detail {
 
-template <>
-bool opt_match<const char*>::operator()(const char* arg) const noexcept {
+bool opt_match_impl_chars(const char* arg, const char* m) noexcept {
   int i = 0;
   for (; m[i]!='\0' && arg[i]!='\0'; ++i)
     if ( arg[i]!=m[i] ) return false;
@@ -163,8 +163,7 @@ inline bool streq_any_ignorecase(const char* str, S1 s1, Ss... ss) {
 
 namespace detail {
 
-template <>
-void arg_parser_impl<bool>(const char* arg, bool& var) {
+void arg_parser_impl_bool(const char* arg, bool& var) {
   if (streq_any_ignorecase(arg,"1","TRUE","YES","ON","Y")) var = true;
   else if (streq_any_ignorecase(arg,"0","FALSE","NO","OFF")) var = false;
   else throw po::error('\"',arg,"\" cannot be interpreted as bool");

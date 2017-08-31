@@ -1,6 +1,8 @@
 #ifndef IVANP_OPT_PARSER_HH
 #define IVANP_OPT_PARSER_HH
 
+#include "program_options/fwd/opt_parser.hh"
+
 #if __has_include(<boost/lexical_cast/try_lexical_convert.hpp>)
 #define PROGRAM_OPTIONS_BOOST_LEXICAL_CAST
 #include <boost/lexical_cast/try_lexical_convert.hpp>
@@ -145,7 +147,10 @@ arg_parser_impl(const char* arg, T& var) {
 }
 
 // Explicit =========================================================
-template <> void arg_parser_impl<bool>(const char* arg, bool& var);
+template <>
+inline void arg_parser_impl<bool>(const char* arg, bool& var) {
+  arg_parser_impl_bool(arg,var);
+}
 
 } // end detail
 
