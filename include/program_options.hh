@@ -23,6 +23,10 @@ struct error : std::runtime_error {
 };
 }}
 
+#ifdef __GNUG__
+#define ASSERT_MSG(MSG) "\n\n\033[33m" MSG "\033[0m\n"
+#endif
+
 #ifndef IVANP_PROGRAM_OPTIONS_CC
 #include "program_options/opt_match.hh"
 #include "program_options/opt_parser.hh"
@@ -50,7 +54,7 @@ class program_options {
   template <typename T, typename... Props>
   inline auto* add_opt(T& x, std::string&& descr, Props&&... p) {
     static_assert( !std::is_const<T>::value,
-      "\033[33mconst reference passed to program option definition\033[0m");
+      ASSERT_MSG("mconst reference passed to program option definition"));
 
     using props_types = std::tuple<std::decay_t<Props>...>;
     auto props = std::forward_as_tuple(std::forward<Props>(p)...);
@@ -58,7 +62,7 @@ class program_options {
 #define UNIQUE_PROP_ASSERT(NAME) \
     using NAME##_i = indices_of<_::is_##NAME, props_types>; \
     static_assert( NAME##_i::size() <= 1, \
-      "\033[33mrepeated \"" #NAME "\" in program option definition\033[0m");
+      ASSERT_MSG("repeated \"" #NAME "\" in program option definition"));
 
     UNIQUE_PROP_ASSERT(switch_init)
     UNIQUE_PROP_ASSERT(default_init)
@@ -72,10 +76,10 @@ class program_options {
 
     using parser_i = indices_of<_::is_parser<T>::template type, props_types>;
     static_assert( parser_i::size() <= 1,
-      "\033[33mrepeated parser in program argument definition\033[0m");
+      ASSERT_MSG("repeated parser in program argument definition"));
 
     static_assert( !(pos_i::size() && npos_i::size()),
-      "\033[33monly one positional property can be specified\033[0m");
+      ASSERT_MSG("only one positional property can be specified"));
 
     using prop_seq = seq::join_t<
       parser_i,
@@ -89,8 +93,8 @@ class program_options {
     >;
 
     static_assert( prop_seq::size() == sizeof...(Props),
-      "\033[33munrecognized argument in program option definition;"
-      " check parser call signature\033[0m");
+      ASSERT_MSG("unrecognized argument in program option definition;"
+                 " check parser call signature"));
 
     auto *opt = detail::make_opt_def(
       &x, std::move(descr), std::move(props), prop_seq{});
@@ -168,7 +172,7 @@ public:
     std::string descr={}, Props&&... p
   ) {
     static_assert( sizeof...(Matchers) > 0,
-      "\033[33mempty tuple in program argument definition\033[0m");
+      ASSERT_MSG("empty tuple in program argument definition"));
     auto *opt = add_opt(x,std::move(descr),std::forward<Props>(p)...);
     add_matches(matchers,opt,std::index_sequence_for<Matchers...>{});
     return *this;

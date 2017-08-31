@@ -98,7 +98,7 @@ public:
   static constexpr bool _is_switch = std::is_same<type,bool>::value;
 
   static_assert( !(_is_pos && _is_switch),
-    "\033[33mdefinition of positional switch option\033[0m" );
+    ASSERT_MSG("definition of positional switch option"));
 
 private:
   // parse ----------------------------------------------------------
