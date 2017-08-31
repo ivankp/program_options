@@ -49,20 +49,20 @@ int main(int argc, char* argv[]) {
   try {
     using namespace ivanp::po;
     program_options()
-      (&d,'d',"Double",switch_init(0.1),double_parser)
-      (&d2,"--d2","1-d",
-       // switch_init(std::tie(d))
-       default_init(as_value([&d]{ return 1.-d; }))
+      (d,'d',"Double",switch_init(0.1),double_parser)
+      (d2,"--d2","1-d",
+        // switch_init(std::tie(d))
+        default_init(as_value([&d]{ return 1.-d; }))
       )
-      (&b,'b',"bool switch",name("bool"))
-      (&i,{"-i","--int"},"Int",multi())
-      (&i,"--count","Count",pos(),
+      (b,'b',"bool switch",name("bool"))
+      (i,{"-i","--int"},"Int",multi())
+      (i,"--count","Count",pos(),
         [](const char* str, decltype(i)& x){ x.push_back(strlen(str)); })
-      (&s,std::forward_as_tuple(
+      (s,std::forward_as_tuple(
             's', [](const char* arg){ return arg[0]=='s'; }),
           "starts with \'s\'"/*, req()*/)
       // (&s,".*\\.txt","ends with .txt")
-      (&tup,{"--tup","-t"},"tuple")
+      (tup,{"--tup","-t"},"tuple")
       .parse(argc,argv);
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;

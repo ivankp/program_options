@@ -47,9 +47,9 @@ class program_options {
 
 #ifndef IVANP_PROGRAM_OPTIONS_CC
   template <typename T, typename... Props>
-  inline auto* add_opt(T* x, std::string&& descr, Props&&... p) {
+  inline auto* add_opt(T& x, std::string&& descr, Props&&... p) {
     static_assert( !std::is_const<T>::value,
-      "\033[33mpointer to const in program option definition\033[0m");
+      "\033[33mconst reference passed to program option definition\033[0m");
 
     using props_types = std::tuple<std::decay_t<Props>...>;
     auto props = std::forward_as_tuple(std::forward<Props>(p)...);
@@ -92,7 +92,7 @@ class program_options {
       " check parser call signature\033[0m");
 
     auto *opt = detail::make_opt_def(
-      x, std::move(descr), std::move(props), prop_seq{});
+      &x, std::move(descr), std::move(props), prop_seq{});
     opt_defs.emplace_back(opt);
 
     opt->set_name(std::move(props),seq::head_t<named_i>{});
@@ -141,7 +141,7 @@ class program_options {
 
 public:
   template <typename T, typename... Props>
-  program_options& operator()(T* x,
+  program_options& operator()(T& x,
     std::initializer_list<const char*> matchers,
     std::string descr={}, Props&&... p
   ) {
@@ -152,7 +152,7 @@ public:
 
   template <typename T, typename Matcher, typename... Props>
   std::enable_if_t<!is_tuple<std::decay_t<Matcher>>::value,program_options&>
-  operator()(T* x,
+  operator()(T& x,
     Matcher&& matcher,
     std::string descr={}, Props&&... p
   ) {
@@ -162,7 +162,7 @@ public:
   }
 
   template <typename T, typename... Matchers, typename... Props>
-  program_options& operator()(T* x,
+  program_options& operator()(T& x,
     const std::tuple<Matchers...>& matchers,
     std::string descr={}, Props&&... p
   ) {
