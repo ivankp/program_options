@@ -29,15 +29,15 @@ template <typename T>
 class opt_match final : public opt_match_base {
   T m; // matching rule
   template <typename U = T>
-  inline std::enable_if_t<!can_print<U>,std::string>
-  str_impl() const noexcept { return "λ"; }
-  template <typename U = T>
   inline std::enable_if_t<can_print<U>,std::string>
   str_impl() const noexcept {
     std::ostringstream ss;
     ss << m;
     return ss.str();
   };
+  template <typename U = T>
+  inline std::enable_if_t<!can_print<U>,std::string>
+  str_impl() const noexcept { return "λ"; }
 public:
   template <typename... Args>
   opt_match(Args&&... args): m(std::forward<Args>(args)...) { }
@@ -51,7 +51,7 @@ inline bool opt_match<char>::operator()(const char* arg) const noexcept {
 }
 template <>
 inline std::string opt_match<char>::str() const noexcept {
-  return {'-',m,'\0'};
+  return {'-',m};
 }
 
 template <>

@@ -180,22 +180,28 @@ void arg_parser_impl_bool(const char* arg, bool& var) {
 
 }
 
-void program_options::help() { // FIXME
+unsigned utf_len(const char* s) {
   // https://stackoverflow.com/a/4063229/2640636
-  cout << "*** help ***" << endl;
-  unsigned max_name_len = 0;
-  for (const auto& opt : opt_defs) {
-    const unsigned len = opt->name.size();
-    for (unsigned i=0; i<len; ++i)
-      cout << opt->name[i] << ':' << int(opt->name[i]) << '\n';
-    cout /* << opt->name */ << '|' << len << endl;
-    if (len > max_name_len) max_name_len = len;
+  unsigned len = 0;
+  while (*s) len += (*s++ & 0xc0) != 0x80;
+  return len;
+}
+
+void program_options::help() {
+  cout << "Options:\n";
+  const unsigned ndefs = opt_defs.size();
+  std::vector<unsigned> lens(ndefs);
+  unsigned width = 0;
+  for (unsigned d=0; d<ndefs; ++d) {
+    const unsigned len = lens[d] = utf_len(opt_defs[d]->name.c_str());
+    if (len > width) width = len;
   }
-  max_name_len += 2;
-  for (const auto& opt : opt_defs) {
-    cout << std::left << std::setw(max_name_len)
-         << opt->name
-         << opt->descr << '\n';
+  width += 2;
+  for (unsigned d=0; d<ndefs; ++d) {
+    const auto& opt = opt_defs[d];
+    cout << "  " << opt->name;
+    for (unsigned i=0, n=width-lens[d]; i<n; ++i) cout << ' ';
+    cout << opt->descr << '\n';
   }
   cout.flush();
 }

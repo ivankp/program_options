@@ -142,7 +142,9 @@ public:
 
   inline bool is_multi() const noexcept {
     // allow `std::vector`s to automatically be multi
-    return disjunction<is_just<multi_t>,is_std_vector<T>>::value;
+    return disjunction<
+        is_just<multi_t>, is_std_vector<T>
+      >::value;
   }
   inline bool is_pos() const noexcept { return _is_pos; }
   inline bool is_pos_end() const noexcept { return is_just<pos_t>::value; }
