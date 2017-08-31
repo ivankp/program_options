@@ -21,6 +21,8 @@
 namespace ivanp { namespace po {
 struct error : std::runtime_error {
   using std::runtime_error::runtime_error;
+  template <typename... Args>
+  error(const Args&... args): error(cat(args...)) { }
 };
 }}
 

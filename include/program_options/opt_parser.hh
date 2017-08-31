@@ -138,7 +138,7 @@ arg_parser_impl(const char* arg, T& var) {
     }
   }
 #endif
-  throw po::error(cat('\"',arg,"\" cannot be interpreted as ",type_str<T>()));
+  throw po::error('\"',arg,"\" cannot be interpreted as ",type_str<T>());
 #else
   std::istringstream(arg) >> var;
 #endif
