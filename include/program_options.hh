@@ -184,7 +184,7 @@ public:
   program_options(std::initializer_list<const char*> flags)
   : help_flags(flags) { };
 
-  bool parse(int argc, char const * const * argv);
+  bool parse(int argc, char const * const * argv, bool help_if_no_args=false);
 
   void help();
 };

@@ -21,6 +21,7 @@ struct opt_def {
   virtual bool is_req() const noexcept = 0;
   virtual bool is_signed() const noexcept = 0;
   virtual bool is_named() const noexcept = 0;
+  virtual bool is_switch_init() const noexcept = 0;
 
   template <typename Props>
   inline void set_name(Props&&, nothing) noexcept { }

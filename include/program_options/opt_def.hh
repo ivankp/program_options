@@ -139,6 +139,9 @@ public:
   inline void default_init() { default_init_impl(); }
 
   inline bool is_switch() const noexcept { return _is_switch; }
+  inline bool is_switch_init() const noexcept {
+    return is_just<switch_init_t>::value;
+  }
 
   inline bool is_multi() const noexcept {
     // allow `std::vector`s to automatically be multi

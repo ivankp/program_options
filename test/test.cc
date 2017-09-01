@@ -19,6 +19,7 @@ using std::endl;
 using namespace std::string_literals;
 
 // TODO: make sure all tuples are forwarded so get returns the right ref type
+// TODO: fix --name exceptions without explanation
 
 void double_parser(const char* str, double& x) {
   x = std::atof(str) * 2;
@@ -44,7 +45,8 @@ int main(int argc, char* argv[]) {
   std::string s;
   // boost::optional<std::string> s;
   // const char* s;
-  boost::optional<bool> b;
+  bool b = false;
+  boost::optional<bool> o;
   std::tuple<double,int> tup {1,2};
   std::map<std::string,double> m;
 
@@ -57,6 +59,7 @@ int main(int argc, char* argv[]) {
         default_init(as_value([&d]{ return 1.-d; }))
       )
       (b,'b',"bool switch")
+      (o,'o',"optional")
       (i,{"-i","--int"},"Int")
       (i,"--count","Count",pos(),
         [](const char* str, decltype(i)& x){ x.push_back(strlen(str)); })
@@ -67,7 +70,7 @@ int main(int argc, char* argv[]) {
       // (&s,".*\\.txt","ends with .txt")
       (tup,{"--tup","-t"},ivanp::cat(type_str<decltype(tup)>()))
       (m,'m',ivanp::cat(type_str<decltype(m)>()),multi())
-      .parse(argc,argv)) return 0;
+      .parse(argc,argv/*,true*/)) return 0;
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;
     return 1;
@@ -82,9 +85,9 @@ int main(int argc, char* argv[]) {
   // if (s) cout << "s = " << *s << endl;
   // else cout << "s undefined" << endl;
   TEST( s )
-  if (b) cout << "b = " << *b << endl;
-  else cout << "b undefined" << endl;
-  // TEST( b )
+  TEST( b )
+  if (o) cout << "o = " << *o << endl;
+  else cout << "o undefined" << endl;
   TEST( std::get<0>(tup) )
   TEST( std::get<1>(tup) )
   cout << "m:";

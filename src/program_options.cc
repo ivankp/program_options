@@ -51,9 +51,14 @@ void check_count(detail::opt_def* opt) {
     throw error("too many options " + opt->name);
 }
 
-bool program_options::parse(int argc, char const * const * argv) {
+bool program_options::parse(int argc, char const * const * argv,
+                            bool help_if_no_args) {
   using namespace ::ivanp::po::detail;
   // --help takes precedence over everything else
+  if (help_if_no_args && argc==1) {
+    help();
+    return true;
+  }
   for (int i=1; i<argc; ++i) {
     for (const char* h : help_flags) {
       if (!strcmp(h,argv[i])) {
@@ -73,7 +78,9 @@ bool program_options::parse(int argc, char const * const * argv) {
     last_was_val = false;
 
     const auto opt_type = get_opt_type(arg);
+#ifdef PROGRAM_OPTIONS_DEBUG
     cout << arg << ' ' << opt_type << endl;
+#endif
 
     // ==============================================================
 
@@ -190,19 +197,44 @@ unsigned utf_len(const char* s) {
 void program_options::help() {
   cout << "Options:\n";
   const unsigned ndefs = opt_defs.size();
+  std::array<unsigned,2> w{0,0};
   std::vector<unsigned> lens(ndefs);
-  unsigned width = 0;
-  for (unsigned d=0; d<ndefs; ++d) {
-    const unsigned len = lens[d] = utf_len(opt_defs[d]->name.c_str());
-    if (len > width) width = len;
-  }
-  width += 2;
+  std::vector<std::string> marks(ndefs);
   for (unsigned d=0; d<ndefs; ++d) {
     const auto& opt = opt_defs[d];
+    unsigned len = lens[d] = utf_len(opt->name.c_str());
+    if (len > w[0]) w[0] = len;
+    len = 0;
+    if (opt->is_req()        ) marks[d] += '*', ++len;
+    if (opt->is_switch()     ) marks[d] += '-', ++len;
+    if (opt->is_switch_init()) marks[d] += '?', ++len;
+    if (opt->is_pos()        ) marks[d] += '^', ++len;
+    if (len > w[1]) w[1] = len;
+  }
+  w[0] += 1;
+  if (w[1]) w[1] += 1;
+  for (unsigned d=0; d<ndefs; ++d) {
+    const auto& opt = opt_defs[d];
+    // name
     cout << "  " << opt->name;
-    for (unsigned i=0, n=width-lens[d]; i<n; ++i) cout << ' ';
+    for (unsigned i=0, n=w[0]-lens[d]; i<n; ++i) cout << ' ';
+    // marks
+    if (w[1]) {
+      cout << marks[d];
+      for (unsigned i=0, n=w[1]-marks[d].size(); i<n; ++i) cout << ' ';
+    }
+    // description
     cout << opt->descr << '\n';
   }
+
+  if (w[1]) {
+    cout << "\nannotation:\n"
+      "  * required\n"
+      "  - switch\n"
+      "  ? argument is optional\n"
+      "  ^ positional\n";
+  }
+
   cout.flush();
 }
 
