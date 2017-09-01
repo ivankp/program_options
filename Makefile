@@ -1,6 +1,6 @@
-CXXFLAGS := -std=c++14 -Wall -O2 -g -Iinclude -fmax-errors=3
+# CXXFLAGS := -std=c++14 -Wall -O2 -g -Iinclude -fmax-errors=3
 # -DPROGRAM_OPTIONS_DEBUG
-# CXXFLAGS := -std=c++14 -Wall -O3 -Iinclude -flto -funroll-loops
+CXXFLAGS := -std=c++14 -Wall -O3 -Iinclude -flto
 
 NODEPS := clean
 .PHONY: all clean
