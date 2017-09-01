@@ -60,7 +60,10 @@ int main(int argc, char* argv[]) {
       )
       (b,'b',"bool switch")
       (o,'o',"optional")
-      (i,{"-i","--int"},"Int")
+      (i,{"-i","--int"},
+       "Position of the first character in the string to be considered in the search.\n"
+       "If this is greater than the string length, the function never finds matches.\n"
+       "Note: The first character is denoted by a value of 0 (not 1): A value of 0 means that the entire string is searched.")
       (i,"--count","Count",pos(),
         [](const char* str, decltype(i)& x){ x.push_back(strlen(str)); })
       (s,std::forward_as_tuple(

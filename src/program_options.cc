@@ -194,10 +194,50 @@ unsigned utf_len(const char* s) {
   return len;
 }
 
+auto split(const char *str, char c = ' ') {
+  std::vector<std::string> result;
+  do {
+    const char *begin = str;
+    while (*str != c && *str) str++;
+    result.emplace_back(begin,str);
+  } while (*str++ != '\0');
+  return result;
+}
+
+void wrap(std::string& str, unsigned w) {
+  unsigned d = 0, l = 0;
+  for (unsigned i=0, n=str.size(); i<n; ++i, ++l) {
+    if (str[i]==' ') {
+      if (l>w) {
+        if (l==i-d) str[i] = '\n', l = 0;
+        else str[d] = '\n', l = i-d;
+      }
+      d = i;
+    } else if (str[i]=='\n') {
+      if (l>w) str[d] = '\n';
+      d = i, l = 0;
+    }
+  }
+  if (l>w) str[d] = '\n';
+}
+
+std::string fmt_descr(std::string str, unsigned t, unsigned w) {
+  wrap(str,w-t);
+  auto lines = split(str.c_str(),'\n');
+  str.erase();
+  for (unsigned i=0, n=lines.size(); i<n;) {
+    if (i) str.append(t,' ');
+    str += lines[i];
+    ++i;
+    if (n-i) str += '\n';
+  }
+  return str;
+}
+
 void program_options::help() {
   cout << "Options:\n";
   const unsigned ndefs = opt_defs.size();
-  std::array<unsigned,2> w{0,0};
+  std::array<unsigned,2> w{0,0}; // name and marks widths
   std::vector<unsigned> lens(ndefs);
   std::vector<std::string> marks(ndefs);
   for (unsigned d=0; d<ndefs; ++d) {
@@ -212,7 +252,7 @@ void program_options::help() {
     if (len > w[1]) w[1] = len;
   }
   w[0] += 1;
-  if (w[1]) w[1] += 1;
+  const unsigned tab = w[0]+w[1]+3;
   for (unsigned d=0; d<ndefs; ++d) {
     const auto& opt = opt_defs[d];
     // name
@@ -221,10 +261,10 @@ void program_options::help() {
     // marks
     if (w[1]) {
       cout << marks[d];
-      for (unsigned i=0, n=w[1]-marks[d].size(); i<n; ++i) cout << ' ';
+      for (unsigned i=0, n=w[1]-marks[d].size()+1; i<n; ++i) cout << ' ';
     }
     // description
-    cout << opt->descr << '\n';
+    cout << fmt_descr(opt->descr,tab,80) << '\n';
   }
 
   if (w[1]) {
