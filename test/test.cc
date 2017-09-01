@@ -73,6 +73,8 @@ int main(int argc, char* argv[]) {
       // (&s,".*\\.txt","ends with .txt")
       (tup,{"--tup","-t"},ivanp::cat(type_str<decltype(tup)>()))
       (m,'m',ivanp::cat(type_str<decltype(m)>()),multi())
+      .help_prefix("Test for program options")
+      .help_suffix("There's no reason to stay alive if you can't do deadlift!")
       .parse(argc,argv/*,true*/)) return 0;
   } catch (const std::exception& e) {
     cerr <<"\033[31m"<< e.what() <<"\033[0m"<< endl;

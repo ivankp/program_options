@@ -42,6 +42,7 @@ namespace ivanp { namespace po {
 
 class program_options {
   std::vector<const char*> help_flags;
+  std::string help_prefix_str, help_suffix_str;
   std::vector<std::unique_ptr<detail::opt_def>> opt_defs;
   std::array<std::vector<std::pair<
     std::unique_ptr<const detail::opt_match_base>,
@@ -183,6 +184,17 @@ public:
   program_options(): help_flags{"-h","--help"} { };
   program_options(std::initializer_list<const char*> flags)
   : help_flags(flags) { };
+
+  template <typename Str>
+  program_options& help_prefix(Str&& str) {
+    help_prefix_str = std::forward<Str>(str);
+    return *this;
+  }
+  template <typename Str>
+  program_options& help_suffix(Str&& str) {
+    help_suffix_str = std::forward<Str>(str);
+    return *this;
+  }
 
   bool parse(int argc, char const * const * argv, bool help_if_no_args=false);
 

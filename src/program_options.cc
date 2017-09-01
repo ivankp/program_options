@@ -235,11 +235,16 @@ std::string fmt_descr(std::string str, unsigned t, unsigned w) {
 }
 
 void program_options::help() {
+  wrap(help_prefix_str,80);
+  if (help_prefix_str.size()) cout << help_prefix_str << "\n\n";
+
   cout << "Options:\n";
+
   const unsigned ndefs = opt_defs.size();
   std::array<unsigned,2> w{0,0}; // name and marks widths
   std::vector<unsigned> lens(ndefs);
   std::vector<std::string> marks(ndefs);
+
   for (unsigned d=0; d<ndefs; ++d) {
     const auto& opt = opt_defs[d];
     unsigned len = lens[d] = utf_len(opt->name.c_str());
@@ -251,6 +256,7 @@ void program_options::help() {
     if (opt->is_pos()        ) marks[d] += '^', ++len;
     if (len > w[1]) w[1] = len;
   }
+
   w[0] += 1;
   const unsigned tab = w[0]+w[1]+3;
   for (unsigned d=0; d<ndefs; ++d) {
@@ -275,6 +281,8 @@ void program_options::help() {
       "  ^ positional\n";
   }
 
+  wrap(help_suffix_str,80);
+  if (help_suffix_str.size()) cout <<'\n'<< help_suffix_str << '\n';
   cout.flush();
 }
 
