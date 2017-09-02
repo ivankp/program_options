@@ -25,6 +25,8 @@ struct error : std::runtime_error {
 
 #ifdef __GNUG__
 #define ASSERT_MSG(MSG) "\n\n\033[33m" MSG "\033[0m\n"
+#else
+#define ASSERT_MSG(MSG) MSG
 #endif
 
 #ifndef IVANP_PROGRAM_OPTIONS_CC
@@ -55,7 +57,7 @@ class program_options {
   template <typename T, typename... Props>
   inline auto* add_opt(T& x, std::string&& descr, Props&&... p) {
     static_assert( !std::is_const<T>::value,
-      ASSERT_MSG("mconst reference passed to program option definition"));
+      ASSERT_MSG("const reference passed to program option definition"));
 
     using props_types = std::tuple<std::decay_t<Props>...>;
     auto props = std::forward_as_tuple(std::forward<Props>(p)...);

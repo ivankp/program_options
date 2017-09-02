@@ -193,48 +193,50 @@ unsigned utf_len(const char* s) {
   return len;
 }
 
-auto split(const char *str, char c = ' ') {
-  std::vector<std::string> result;
-  do {
-    const char *begin = str;
-    while (*str != c && *str) str++;
-    result.emplace_back(begin,str);
-  } while (*str++ != '\0');
-  return result;
-}
-
-void wrap(std::string& str, unsigned w) {
+std::vector<unsigned> wrap(std::string& str, unsigned w) {
+  std::vector<unsigned> br;
   unsigned d = 0, l = 0;
   for (unsigned i=0, n=str.size(); i<n; ++i, ++l) {
     if (str[i]==' ') {
       if (l>w) {
-        if (l==i-d) str[i] = '\n', l = 0;
-        else str[d] = '\n', l = i-d;
+        if (l==i-d) str[i] = '\n', l = 0, br.push_back(i);
+        else str[d] = '\n', l = i-d, br.push_back(d);
       }
       d = i;
     } else if (str[i]=='\n') {
-      if (l>w) str[d] = '\n';
+      if (l>w) str[d] = '\n', br.push_back(d);
       d = i, l = 0;
+      br.push_back(d);
     }
   }
-  if (l>w) str[d] = '\n';
+  if (l>w) str[d] = '\n', br.push_back(d);
+  return br;
 }
 
-std::string fmt_descr(std::string str, unsigned t, unsigned w) {
-  wrap(str,w-t);
-  auto lines = split(str.c_str(),'\n');
-  str.erase();
-  for (unsigned i=0, n=lines.size(); i<n;) {
-    if (i) str.append(t,' ');
-    str += lines[i];
-    ++i;
-    if (n-i) str += '\n';
+const std::string& fmt_descr(std::string& str, unsigned t, unsigned w) {
+  const auto br = wrap(str,w-t); // replace spaces with \n for line wrapping
+  if (br.size()==0) return str;
+
+  std::string buff;
+  buff.reserve(str.size()+br.size()*t);
+  buff.append(str,0,br.front()+1);
+  size_t pos;
+  for (size_t i=1, n=br.size(); i<n; ++i) {
+    pos = br[i-1];
+    buff.append(t,' ');
+    buff.append(str,pos+1,br[i]-pos);
   }
+  pos = br.back();
+  buff.append(t,' ');
+  buff.append(str,pos+1,str.size()-pos);
+
+  str = std::move(buff);
   return str;
 }
 
 void program_options::help() {
-  wrap(help_prefix_str,80);
+  static constexpr unsigned line_width = 80;
+  wrap(help_prefix_str,line_width);
   if (help_prefix_str.size()) cout << help_prefix_str << "\n\n";
 
   cout << "Options:\n";
@@ -269,7 +271,7 @@ void program_options::help() {
       for (unsigned i=0, n=w[1]-marks[d].size()+1; i<n; ++i) cout << ' ';
     }
     // description
-    cout << fmt_descr(opt->descr,tab,80) << '\n';
+    cout << fmt_descr(opt->descr,tab,line_width) << '\n';
   }
 
   if (w[1]) {
@@ -280,7 +282,7 @@ void program_options::help() {
       "  ^ positional\n";
   }
 
-  wrap(help_suffix_str,80);
+  wrap(help_suffix_str,line_width);
   if (help_suffix_str.size()) cout <<'\n'<< help_suffix_str << '\n';
   cout.flush();
 }

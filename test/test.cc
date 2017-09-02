@@ -19,7 +19,6 @@ using std::endl;
 using namespace std::string_literals;
 
 // TODO: make sure all tuples are forwarded so get returns the right ref type
-// TODO: fix --name exceptions without explanation
 
 void double_parser(const char* str, double& x) {
   x = std::atof(str) * 2;
