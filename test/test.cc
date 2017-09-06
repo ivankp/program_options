@@ -48,10 +48,12 @@ int main(int argc, char* argv[]) {
   boost::optional<bool> o;
   std::tuple<double,int> tup {1,2};
   std::map<std::string,double> m;
+  bool dash = false;
 
   try {
     using namespace ivanp::po;
     if (program_options() // test for help
+      (dash,"-","dash")
       (d,'d',"Double",switch_init(0.1),double_parser)
       (d2,"--d2","1-d",
         // switch_init(std::tie(d))
@@ -97,6 +99,7 @@ int main(int argc, char* argv[]) {
   cout << "m:";
   for (const auto& x : m) cout << ' ' << x.first << ':' << x.second;
   cout << endl;
+  TEST( dash )
 
   return 0;
 }
